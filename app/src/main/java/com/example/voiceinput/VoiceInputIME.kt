@@ -1,6 +1,7 @@
 package com.example.voiceinput
 
 import android.inputmethodservice.InputMethodService
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -158,9 +159,13 @@ class VoiceInputIME : InputMethodService() {
         val chunks = currentChunks ?: return
 
         val charsAfter = chunks.drop(chunkIndex + 1).sumOf { it.displayText.length }
-        val oldLen = oldText.length
+        val deleteCount = charsAfter + oldText.length
 
-        ic.deleteSurroundingText(charsAfter + oldLen, 0)
+        for (i in 0 until deleteCount) {
+            ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+            ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+        }
+
         ic.commitText(newText, 1)
         val afterText = chunks.drop(chunkIndex + 1).joinToString("") { it.displayText }
         if (afterText.isNotEmpty()) {
