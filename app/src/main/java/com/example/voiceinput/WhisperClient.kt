@@ -26,7 +26,7 @@ class WhisperClient(
                 audioFile.name,
                 audioFile.asRequestBody("audio/wav".toMediaType())
             )
-            .addFormDataPart("model", "whisper-1")
+            .addFormDataPart("model", "gpt-4o-transcribe")
             .addFormDataPart("language", "ja")
             .build()
 
