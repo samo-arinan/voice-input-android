@@ -1,6 +1,9 @@
 package com.example.voiceinput
 
 import android.inputmethodservice.InputMethodService
+import android.os.Handler
+import android.os.Looper
+import android.view.GestureDetector
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -17,6 +20,13 @@ class VoiceInputIME : InputMethodService() {
     private var candidateBar: LinearLayout? = null
     private var candidateScroll: HorizontalScrollView? = null
     private var currentChunks: List<ConversionChunk>? = null
+    private var isToggleRecording = false
+    private var isHoldRecording = false
+    private var longPressRunnable: Runnable? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private companion object {
+        const val LONG_PRESS_DELAY = 500L
+    }
 
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
@@ -27,14 +37,47 @@ class VoiceInputIME : InputMethodService() {
         micButton = view.findViewById(R.id.imeMicButton)
         candidateBar = view.findViewById(R.id.imeCandidateBar)
         candidateScroll = view.findViewById(R.id.imeCandidateScroll)
+
+        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                longPressRunnable?.let { handler.removeCallbacks(it) }
+                longPressRunnable = null
+                if (!isToggleRecording && !isHoldRecording) {
+                    isToggleRecording = true
+                    onMicPressed()
+                }
+                return true
+            }
+
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                if (isToggleRecording) {
+                    isToggleRecording = false
+                    onMicReleased()
+                }
+                return true
+            }
+        })
+
         micButton?.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    onMicPressed()
+                    if (!isToggleRecording) {
+                        longPressRunnable = Runnable {
+                            isHoldRecording = true
+                            onMicPressed()
+                        }
+                        handler.postDelayed(longPressRunnable!!, LONG_PRESS_DELAY)
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    onMicReleased()
+                    longPressRunnable?.let { handler.removeCallbacks(it) }
+                    longPressRunnable = null
+                    if (isHoldRecording) {
+                        isHoldRecording = false
+                        onMicReleased()
+                    }
                     true
                 }
                 else -> false
@@ -96,7 +139,7 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "変換に失敗しました"
             }
             delay(5000)
-            statusText?.text = "長押しで音声入力"
+            statusText?.text = "長押し/ダブルタップで音声入力"
         }
     }
 
