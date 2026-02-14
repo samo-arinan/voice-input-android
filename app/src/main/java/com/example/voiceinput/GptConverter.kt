@@ -2,6 +2,7 @@ package com.example.voiceinput
 
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import com.google.gson.reflect.TypeToken
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -25,13 +26,27 @@ class GptConverter(
             ユーザーの発話テキストを受け取り、適切な出力に変換してください。
 
             ルール：
-            - 発話がコマンドの意図なら、実行可能なコマンド文字列のみを返す
+            - 発話がコマンドの意図なら、実行可能なコマンド文字列に変換する
             - 発話が日本語の文章なら、自然な日本語としてそのまま返す
-            - 余計な説明は一切付けず、変換結果のみを返す
+            - 必ずJSON配列形式で返す。各要素は {"raw": "元の部分", "converted": "変換後"} の形式
+            - 意味のある単位（単語・フレーズ）ごとにチャンクに分割する
+            - 余計な説明は一切付けず、JSON配列のみを返す
+
+            例：
+            入力: "ギットステータスを確認して"
+            出力: [{"raw":"ギットステータス","converted":"git status"},{"raw":"を確認して","converted":"を確認して"}]
+
+            入力: "こんにちは世界"
+            出力: [{"raw":"こんにちは","converted":"こんにちは"},{"raw":"世界","converted":"世界"}]
         """.trimIndent()
     }
 
     fun convert(rawText: String): String {
+        val chunks = convertToChunks(rawText)
+        return chunks.joinToString("") { it.converted }
+    }
+
+    fun convertToChunks(rawText: String): List<ConversionChunk> {
         val messages = listOf(
             mapOf("role" to "system", "content" to SYSTEM_PROMPT),
             mapOf("role" to "user", "content" to rawText)
@@ -53,16 +68,33 @@ class GptConverter(
 
         return try {
             val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) return rawText
-            val responseBody = response.body?.string() ?: return rawText
+            if (!response.isSuccessful) return listOf(ConversionChunk(rawText, rawText))
+            val responseBody = response.body?.string() ?: return listOf(ConversionChunk(rawText, rawText))
             val json = JsonParser.parseString(responseBody).asJsonObject
-            json.getAsJsonArray("choices")
+            val content = json.getAsJsonArray("choices")
                 .get(0).asJsonObject
                 .getAsJsonObject("message")
                 .get("content").asString
                 .trim()
+
+            parseChunks(rawText, content)
         } catch (e: Exception) {
-            rawText
+            listOf(ConversionChunk(rawText, rawText))
+        }
+    }
+
+    private fun parseChunks(rawText: String, content: String): List<ConversionChunk> {
+        return try {
+            val type = object : TypeToken<List<Map<String, String>>>() {}.type
+            val items: List<Map<String, String>> = gson.fromJson(content, type)
+            items.map { item ->
+                ConversionChunk(
+                    raw = item["raw"] ?: "",
+                    converted = item["converted"] ?: ""
+                )
+            }
+        } catch (e: Exception) {
+            listOf(ConversionChunk(rawText, content))
         }
     }
 }
