@@ -38,23 +38,34 @@ class VoiceInputProcessorTest {
     }
 
     @Test
-    fun `stopAndProcess returns chunks on success`() = runTest {
+    fun `stopAndProcess returns chunks with diff on success`() = runTest {
         val audioFile = mockk<File>()
-        val chunks = listOf(
-            ConversionChunk("ギット", "git"),
-            ConversionChunk("ステータス", "status")
-        )
         every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns "ギットステータス"
-        every { gptConverter.convertToChunks("ギットステータス") } returns chunks
+        every { whisperClient.transcribe(audioFile) } returns "ギットステータスを確認して"
+        every { gptConverter.convert("ギットステータスを確認して") } returns "git statusを確認して"
         every { audioFile.delete() } returns true
 
         val result = processor.stopAndProcess()
 
-        assertEquals(2, result!!.size)
-        assertEquals("git", result[0].converted)
-        assertEquals("status", result[1].converted)
+        assertNotNull(result)
+        assertTrue(result!!.size >= 2)
+        val unchanged = result.filter { !it.isDifferent }
+        assertTrue(unchanged.any { it.raw.contains("を確認して") })
         verify { audioFile.delete() }
+    }
+
+    @Test
+    fun `stopAndProcess returns single chunk when texts are identical`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile) } returns "こんにちは"
+        every { gptConverter.convert("こんにちは") } returns "こんにちは"
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndProcess()
+
+        assertEquals(1, result!!.size)
+        assertFalse(result[0].isDifferent)
     }
 
     @Test

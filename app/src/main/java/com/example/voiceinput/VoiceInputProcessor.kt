@@ -23,9 +23,11 @@ class VoiceInputProcessor(
                 whisperClient.transcribe(audioFile)
             } ?: return null
 
-            return withContext(Dispatchers.IO) {
-                gptConverter.convertToChunks(rawText)
+            val convertedText = withContext(Dispatchers.IO) {
+                gptConverter.convert(rawText)
             }
+
+            return TextDiffer.diff(rawText, convertedText)
         } finally {
             audioFile.delete()
         }

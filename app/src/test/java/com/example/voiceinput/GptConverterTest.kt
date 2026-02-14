@@ -28,12 +28,11 @@ class GptConverterTest {
     }
 
     private fun chatResponse(content: String): String {
-        val escaped = content.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
         return """
         {
             "choices": [{
                 "message": {
-                    "content": "$escaped"
+                    "content": "$content"
                 }
             }]
         }
@@ -41,37 +40,7 @@ class GptConverterTest {
     }
 
     @Test
-    fun `convertToChunks returns chunks with raw and converted`() {
-        val jsonArray = """[{"raw":"ギット","converted":"git"},{"raw":"ステータス","converted":"status"}]"""
-        server.enqueue(
-            MockResponse()
-                .setBody(chatResponse(jsonArray))
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-        )
-
-        val chunks = converter.convertToChunks("ギットステータス")
-
-        assertEquals(2, chunks.size)
-        assertEquals("ギット", chunks[0].raw)
-        assertEquals("git", chunks[0].converted)
-        assertEquals("ステータス", chunks[1].raw)
-        assertEquals("status", chunks[1].converted)
-    }
-
-    @Test
-    fun `convertToChunks returns single chunk on API error`() {
-        server.enqueue(MockResponse().setResponseCode(500))
-
-        val chunks = converter.convertToChunks("テスト入力")
-
-        assertEquals(1, chunks.size)
-        assertEquals("テスト入力", chunks[0].raw)
-        assertEquals("テスト入力", chunks[0].converted)
-    }
-
-    @Test
-    fun `convertToChunks returns single chunk when response is not JSON array`() {
+    fun `convert sends text and returns converted result`() {
         server.enqueue(
             MockResponse()
                 .setBody(chatResponse("git status"))
@@ -79,28 +48,39 @@ class GptConverterTest {
                 .addHeader("Content-Type", "application/json")
         )
 
-        val chunks = converter.convertToChunks("ギットステータス")
+        val result = converter.convert("ギットステータス")
 
-        assertEquals(1, chunks.size)
-        assertEquals("ギットステータス", chunks[0].raw)
-        assertEquals("git status", chunks[0].converted)
+        assertEquals("git status", result)
+
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertTrue(request.path!!.contains("chat/completions"))
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("ギットステータス"))
+        assertTrue(body.contains("gpt-4.1-mini"))
     }
 
     @Test
-    fun `convertToChunks sends correct prompt requesting JSON`() {
-        val jsonArray = """[{"raw":"テスト","converted":"テスト"}]"""
+    fun `convert returns original text on API error`() {
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        val result = converter.convert("テスト入力")
+        assertEquals("テスト入力", result)
+    }
+
+    @Test
+    fun `convert includes system prompt with conversion rules`() {
         server.enqueue(
             MockResponse()
-                .setBody(chatResponse(jsonArray))
+                .setBody(chatResponse("ls -la"))
                 .setResponseCode(200)
                 .addHeader("Content-Type", "application/json")
         )
 
-        converter.convertToChunks("テスト")
+        converter.convert("ファイル一覧を表示して")
 
         val body = server.takeRequest().body.readUtf8()
-        assertTrue(body.contains("JSON"))
-        assertTrue(body.contains("raw"))
-        assertTrue(body.contains("converted"))
+        assertTrue(body.contains("音声入力アシスタント"))
+        assertTrue(body.contains("コマンド"))
     }
 }
