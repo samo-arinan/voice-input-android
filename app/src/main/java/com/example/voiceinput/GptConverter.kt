@@ -62,7 +62,7 @@ class GptConverter(
         )
         val body = gson.toJson(
             mapOf(
-                "model" to "gpt-4o",
+                "model" to "gpt-4.1-mini",
                 "messages" to messages,
                 "temperature" to 0.3
             )
