@@ -4,10 +4,7 @@ import android.inputmethodservice.InputMethodService
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import kotlinx.coroutines.*
 
 class VoiceInputIME : InputMethodService() {
@@ -16,6 +13,9 @@ class VoiceInputIME : InputMethodService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var statusText: TextView? = null
     private var micButton: ImageView? = null
+    private var candidateBar: LinearLayout? = null
+    private var candidateScroll: HorizontalScrollView? = null
+    private var currentChunks: List<ConversionChunk>? = null
 
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
@@ -36,6 +36,8 @@ class VoiceInputIME : InputMethodService() {
 
         statusText = view.findViewById(R.id.imeStatusText)
         micButton = view.findViewById(R.id.imeMicButton)
+        candidateBar = view.findViewById(R.id.imeCandidateBar)
+        candidateScroll = view.findViewById(R.id.imeCandidateScroll)
         val switchButton = view.findViewById<ImageButton>(R.id.imeSwitchButton)
 
         micButton?.setOnTouchListener { _, event ->
@@ -68,6 +70,7 @@ class VoiceInputIME : InputMethodService() {
         if (started) {
             statusText?.text = "録音中..."
             micButton?.alpha = 0.5f
+            clearCandidateBar()
         } else {
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
         }
@@ -83,15 +86,97 @@ class VoiceInputIME : InputMethodService() {
         serviceScope.launch {
             val chunks = proc.stopAndProcess()
             if (chunks != null) {
-                val text = chunks.joinToString("") { it.displayText }
-                currentInputConnection?.commitText(text, 1)
+                currentChunks = chunks
+                val fullText = chunks.joinToString("") { it.displayText }
+                currentInputConnection?.commitText(fullText, 1)
+                showCandidateBar(chunks)
                 statusText?.text = "完了"
             } else {
                 statusText?.text = "変換に失敗しました"
             }
-            delay(2000)
+            delay(5000)
             statusText?.text = "長押しで音声入力"
         }
+    }
+
+    private fun showCandidateBar(chunks: List<ConversionChunk>) {
+        val bar = candidateBar ?: return
+        bar.removeAllViews()
+
+        val hasDifference = chunks.any { it.isDifferent }
+        if (!hasDifference) return
+
+        candidateScroll?.visibility = View.VISIBLE
+
+        chunks.forEachIndexed { index, chunk ->
+            val button = TextView(this).apply {
+                text = chunk.displayText
+                textSize = 14f
+                setBackgroundResource(
+                    if (chunk.isDifferent) R.drawable.chunk_highlight_bg
+                    else R.drawable.chunk_normal_bg
+                )
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                params.marginEnd = 4
+                layoutParams = params
+
+                if (chunk.isDifferent) {
+                    setOnClickListener { showChunkPopup(index, this) }
+                }
+            }
+            bar.addView(button)
+        }
+    }
+
+    private fun showChunkPopup(chunkIndex: Int, anchorView: View) {
+        val chunks = currentChunks ?: return
+        val chunk = chunks[chunkIndex]
+
+        val popup = PopupMenu(this, anchorView)
+        popup.menu.add(0, 0, 0, chunk.converted)
+        popup.menu.add(0, 1, 1, chunk.raw)
+
+        popup.setOnMenuItemClickListener { item ->
+            val useRaw = item.itemId == 1
+            if (chunk.useRaw != useRaw) {
+                val oldText = chunk.displayText
+                chunk.useRaw = useRaw
+                val newText = chunk.displayText
+                replaceChunkInInput(chunkIndex, oldText, newText)
+                refreshCandidateBar()
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun replaceChunkInInput(chunkIndex: Int, oldText: String, newText: String) {
+        val ic = currentInputConnection ?: return
+        val chunks = currentChunks ?: return
+
+        val charsAfter = chunks.drop(chunkIndex + 1).sumOf { it.displayText.length }
+        val oldLen = oldText.length
+
+        ic.deleteSurroundingText(charsAfter + oldLen, 0)
+        ic.commitText(newText, 1)
+        val afterText = chunks.drop(chunkIndex + 1).joinToString("") { it.displayText }
+        if (afterText.isNotEmpty()) {
+            ic.commitText(afterText, 1)
+        }
+    }
+
+    private fun refreshCandidateBar() {
+        val chunks = currentChunks ?: return
+        showCandidateBar(chunks)
+    }
+
+    private fun clearCandidateBar() {
+        candidateBar?.removeAllViews()
+        candidateScroll?.visibility = View.GONE
+        currentChunks = null
     }
 
     override fun onDestroy() {
