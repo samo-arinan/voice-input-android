@@ -38,16 +38,22 @@ class VoiceInputProcessorTest {
     }
 
     @Test
-    fun `stopAndProcess returns converted text on success`() = runTest {
+    fun `stopAndProcess returns chunks on success`() = runTest {
         val audioFile = mockk<File>()
+        val chunks = listOf(
+            ConversionChunk("ギット", "git"),
+            ConversionChunk("ステータス", "status")
+        )
         every { audioRecorder.stop() } returns audioFile
         every { whisperClient.transcribe(audioFile) } returns "ギットステータス"
-        every { gptConverter.convert("ギットステータス") } returns "git status"
+        every { gptConverter.convertToChunks("ギットステータス") } returns chunks
         every { audioFile.delete() } returns true
 
         val result = processor.stopAndProcess()
 
-        assertEquals("git status", result)
+        assertEquals(2, result!!.size)
+        assertEquals("git", result[0].converted)
+        assertEquals("status", result[1].converted)
         verify { audioFile.delete() }
     }
 
@@ -71,19 +77,6 @@ class VoiceInputProcessorTest {
 
         assertNull(result)
         verify { audioFile.delete() }
-    }
-
-    @Test
-    fun `stopAndProcess returns raw text when converter returns it`() = runTest {
-        val audioFile = mockk<File>()
-        every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns "こんにちは"
-        every { gptConverter.convert("こんにちは") } returns "こんにちは"
-        every { audioFile.delete() } returns true
-
-        val result = processor.stopAndProcess()
-
-        assertEquals("こんにちは", result)
     }
 
     @Test

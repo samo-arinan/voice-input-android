@@ -81,8 +81,9 @@ class VoiceInputIME : InputMethodService() {
         statusText?.text = "変換中..."
 
         serviceScope.launch {
-            val text = proc.stopAndProcess()
-            if (text != null) {
+            val chunks = proc.stopAndProcess()
+            if (chunks != null) {
+                val text = chunks.joinToString("") { it.displayText }
                 currentInputConnection?.commitText(text, 1)
                 statusText?.text = "完了"
             } else {

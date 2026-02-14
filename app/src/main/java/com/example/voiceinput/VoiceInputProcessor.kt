@@ -15,7 +15,7 @@ class VoiceInputProcessor(
         return audioRecorder.start()
     }
 
-    suspend fun stopAndProcess(): String? {
+    suspend fun stopAndProcess(): List<ConversionChunk>? {
         val audioFile = audioRecorder.stop() ?: return null
 
         try {
@@ -24,7 +24,7 @@ class VoiceInputProcessor(
             } ?: return null
 
             return withContext(Dispatchers.IO) {
-                gptConverter.convert(rawText)
+                gptConverter.convertToChunks(rawText)
             }
         } finally {
             audioFile.delete()
