@@ -5,6 +5,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
+import com.google.gson.Gson
 import org.junit.Test
 
 class GptConverterTest {
@@ -66,6 +67,58 @@ class GptConverterTest {
 
         val result = converter.convert("テスト入力")
         assertEquals("テスト入力", result)
+    }
+
+    @Test
+    fun `getCandidates returns list of alternatives`() {
+        val candidatesJson = """["天気", "天機", "転機"]"""
+        val responseBody = """
+            {
+                "choices": [{
+                    "message": {
+                        "content": ${Gson().toJson(candidatesJson)}
+                    }
+                }]
+            }
+        """.trimIndent()
+        server.enqueue(
+            MockResponse()
+                .setBody(responseBody)
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val result = converter.getCandidates("てんき")
+
+        assertEquals(3, result.size)
+        assertEquals("天気", result[0])
+        assertEquals("天機", result[1])
+        assertEquals("転機", result[2])
+
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue(body.contains("てんき"))
+        assertTrue(body.contains("候補"))
+    }
+
+    @Test
+    fun `getCandidates returns empty list on API error`() {
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        val result = converter.getCandidates("テスト")
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getCandidates returns empty list on invalid JSON`() {
+        server.enqueue(
+            MockResponse()
+                .setBody(chatResponse("not a json array"))
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val result = converter.getCandidates("テスト")
+        assertTrue(result.isEmpty())
     }
 
     @Test

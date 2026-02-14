@@ -3,9 +3,12 @@ package com.example.voiceinput
 import android.inputmethodservice.InputMethodService
 import android.os.Handler
 import android.os.Looper
+import android.view.ActionMode
 import android.view.GestureDetector
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.*
@@ -17,9 +20,11 @@ class VoiceInputIME : InputMethodService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var statusText: TextView? = null
     private var micButton: ImageView? = null
-    private var candidateBar: LinearLayout? = null
-    private var candidateScroll: HorizontalScrollView? = null
-    private var currentChunks: List<ConversionChunk>? = null
+    private var candidateArea: LinearLayout? = null
+    private var candidateText: TextView? = null
+    private var candidateButton: Button? = null
+    private var committedTextLength = 0
+    private var currentFullText: String? = null
     private var isToggleRecording = false
     private var isHoldRecording = false
     private var longPressRunnable: Runnable? = null
@@ -35,8 +40,23 @@ class VoiceInputIME : InputMethodService() {
 
         statusText = view.findViewById(R.id.imeStatusText)
         micButton = view.findViewById(R.id.imeMicButton)
-        candidateBar = view.findViewById(R.id.imeCandidateBar)
-        candidateScroll = view.findViewById(R.id.imeCandidateScroll)
+        candidateArea = view.findViewById(R.id.candidateArea)
+        candidateText = view.findViewById(R.id.candidateText)
+        candidateButton = view.findViewById(R.id.candidateButton)
+
+        candidateButton?.setOnClickListener { onCandidateButtonTap() }
+
+        val noopActionModeCallback = object : ActionMode.Callback {
+            override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = true
+            override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                menu?.clear()
+                return true
+            }
+            override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?) = false
+            override fun onDestroyActionMode(mode: ActionMode?) {}
+        }
+        candidateText?.customSelectionActionModeCallback = noopActionModeCallback
+        candidateText?.customInsertionActionModeCallback = noopActionModeCallback
 
         val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
@@ -114,7 +134,7 @@ class VoiceInputIME : InputMethodService() {
         if (started) {
             statusText?.text = "録音中..."
             micButton?.alpha = 0.5f
-            clearCandidateBar()
+            hideCandidateArea()
         } else {
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
         }
@@ -130,11 +150,12 @@ class VoiceInputIME : InputMethodService() {
         serviceScope.launch {
             val chunks = proc.stopAndProcess()
             if (chunks != null) {
-                currentChunks = chunks
                 val fullText = chunks.joinToString("") { it.displayText }
+                committedTextLength = fullText.length
+                currentFullText = fullText
                 currentInputConnection?.commitText(fullText, 1)
-                showCandidateBar(chunks)
-                statusText?.text = "完了"
+                showCandidateArea(fullText)
+                statusText?.text = "完了（テキスト選択→候補）"
             } else {
                 statusText?.text = "変換に失敗しました"
             }
@@ -143,88 +164,92 @@ class VoiceInputIME : InputMethodService() {
         }
     }
 
-    private fun showCandidateBar(chunks: List<ConversionChunk>) {
-        val bar = candidateBar ?: return
-        bar.removeAllViews()
+    // --- Candidate area ---
 
-        val hasDifference = chunks.any { it.isDifferent }
-        if (!hasDifference) return
+    private fun showCandidateArea(text: String) {
+        candidateText?.text = text
+        candidateArea?.visibility = View.VISIBLE
+    }
 
-        candidateScroll?.visibility = View.VISIBLE
+    private fun hideCandidateArea() {
+        candidateArea?.visibility = View.GONE
+        candidateText?.text = ""
+        currentFullText = null
+    }
 
-        chunks.forEachIndexed { index, chunk ->
-            val button = TextView(this).apply {
-                text = chunk.displayText
-                textSize = 14f
-                setBackgroundResource(
-                    if (chunk.isDifferent) R.drawable.chunk_highlight_bg
-                    else R.drawable.chunk_normal_bg
-                )
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                params.marginEnd = 4
-                layoutParams = params
+    private fun onCandidateButtonTap() {
+        val tv = candidateText ?: return
+        val start = tv.selectionStart
+        val end = tv.selectionEnd
 
-                if (chunk.isDifferent) {
-                    setOnClickListener { showChunkPopup(index, this) }
-                }
+        if (start < 0 || end < 0 || start == end) {
+            Toast.makeText(this, "テキストを選択してください", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val selectedText = tv.text.substring(start, end)
+        fetchAiCandidates(selectedText, start, end)
+    }
+
+    private fun fetchAiCandidates(selectedText: String, selStart: Int, selEnd: Int) {
+        statusText?.text = "候補取得中..."
+
+        serviceScope.launch {
+            val prefsManager = PreferencesManager(
+                getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
+            )
+            val apiKey = prefsManager.getApiKey() ?: return@launch
+            val converter = GptConverter(apiKey)
+            val candidates = withContext(Dispatchers.IO) {
+                converter.getCandidates(selectedText)
             }
-            bar.addView(button)
+
+            if (candidates.isNotEmpty()) {
+                showAiCandidatePopup(candidates, selStart, selEnd)
+            } else {
+                Toast.makeText(this@VoiceInputIME, "候補を取得できませんでした", Toast.LENGTH_SHORT).show()
+            }
+            statusText?.text = "長押し/ダブルタップで音声入力"
         }
     }
 
-    private fun showChunkPopup(chunkIndex: Int, anchorView: View) {
-        val chunks = currentChunks ?: return
-        val chunk = chunks[chunkIndex]
+    private fun showAiCandidatePopup(candidates: List<String>, selStart: Int, selEnd: Int) {
+        val anchor = candidateButton ?: return
+        val popup = PopupMenu(this, anchor)
 
-        val popup = PopupMenu(this, anchorView)
-        popup.menu.add(0, 0, 0, chunk.converted)
-        popup.menu.add(0, 1, 1, chunk.raw)
+        candidates.forEachIndexed { i, candidate ->
+            popup.menu.add(0, i, i, candidate)
+        }
 
         popup.setOnMenuItemClickListener { item ->
-            val useRaw = item.itemId == 1
-            if (chunk.useRaw != useRaw) {
-                val oldText = chunk.displayText
-                chunk.useRaw = useRaw
-                val newText = chunk.displayText
-                replaceChunkInInput(chunkIndex, oldText, newText)
-                refreshCandidateBar()
-            }
+            val selected = candidates[item.itemId]
+            replaceRange(selStart, selEnd, selected)
             true
         }
         popup.show()
     }
 
-    private fun replaceChunkInInput(chunkIndex: Int, oldText: String, newText: String) {
+    private fun replaceRange(selStart: Int, selEnd: Int, replacement: String) {
         val ic = currentInputConnection ?: return
-        val chunks = currentChunks ?: return
+        val fullText = currentFullText ?: return
 
-        val charsAfter = chunks.drop(chunkIndex + 1).sumOf { it.displayText.length }
-        val deleteCount = charsAfter + oldText.length
-
-        for (i in 0 until deleteCount) {
+        // Delete all committed text
+        for (i in 0 until committedTextLength) {
             ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
             ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
         }
 
+        // Build new text
+        val newText = fullText.substring(0, selStart) + replacement + fullText.substring(selEnd)
         ic.commitText(newText, 1)
-        val afterText = chunks.drop(chunkIndex + 1).joinToString("") { it.displayText }
-        if (afterText.isNotEmpty()) {
-            ic.commitText(afterText, 1)
-        }
+        committedTextLength = newText.length
+        currentFullText = newText
+        showCandidateArea(newText)
     }
 
-    private fun refreshCandidateBar() {
-        val chunks = currentChunks ?: return
-        showCandidateBar(chunks)
-    }
-
-    private fun clearCandidateBar() {
-        candidateBar?.removeAllViews()
-        candidateScroll?.visibility = View.GONE
-        currentChunks = null
+    private fun hideCandidateAreaDelayed() {
+        candidateArea?.visibility = View.GONE
+        currentFullText = null
     }
 
     override fun onDestroy() {

@@ -31,12 +31,33 @@ class GptConverter(
             - 意味を変えない。文章の内容はそのまま維持する
             - 余計な説明は一切付けず、修正結果のみを返す
         """.trimIndent()
+
+        private val CANDIDATES_PROMPT = """
+            テキストの変換候補を3〜5個生成してください。
+            漢字変換、別の表現、コマンド変換など、ユーザーが意図しそうな候補を出してください。
+            JSON配列のみを返してください。説明は不要です。
+            例: ["天気", "天機", "転機"]
+        """.trimIndent()
     }
 
     fun convert(rawText: String): String {
+        return callGpt(SYSTEM_PROMPT, rawText) ?: rawText
+    }
+
+    fun getCandidates(text: String): List<String> {
+        val response = callGpt(CANDIDATES_PROMPT, text) ?: return emptyList()
+        return try {
+            val jsonArray = JsonParser.parseString(response).asJsonArray
+            jsonArray.map { it.asString }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun callGpt(systemPrompt: String, userText: String): String? {
         val messages = listOf(
-            mapOf("role" to "system", "content" to SYSTEM_PROMPT),
-            mapOf("role" to "user", "content" to rawText)
+            mapOf("role" to "system", "content" to systemPrompt),
+            mapOf("role" to "user", "content" to userText)
         )
         val body = gson.toJson(
             mapOf(
@@ -55,8 +76,8 @@ class GptConverter(
 
         return try {
             val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) return rawText
-            val responseBody = response.body?.string() ?: return rawText
+            if (!response.isSuccessful) return null
+            val responseBody = response.body?.string() ?: return null
             val json = JsonParser.parseString(responseBody).asJsonObject
             json.getAsJsonArray("choices")
                 .get(0).asJsonObject
@@ -64,7 +85,7 @@ class GptConverter(
                 .get("content").asString
                 .trim()
         } catch (e: Exception) {
-            rawText
+            null
         }
     }
 }
