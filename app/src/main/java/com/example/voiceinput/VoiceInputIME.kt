@@ -20,26 +20,12 @@ class VoiceInputIME : InputMethodService() {
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
 
-        val prefsManager = PreferencesManager(
-            getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
-        )
-        val apiKey = prefsManager.getApiKey()
-        if (apiKey.isNullOrBlank()) {
-            Toast.makeText(this, "APIキーが設定されていません", Toast.LENGTH_LONG).show()
-        } else {
-            processor = VoiceInputProcessor(
-                AudioRecorder(cacheDir),
-                WhisperClient(apiKey),
-                GptConverter(apiKey)
-            )
-        }
+        refreshProcessor()
 
         statusText = view.findViewById(R.id.imeStatusText)
         micButton = view.findViewById(R.id.imeMicButton)
         candidateBar = view.findViewById(R.id.imeCandidateBar)
         candidateScroll = view.findViewById(R.id.imeCandidateScroll)
-        val switchButton = view.findViewById<ImageButton>(R.id.imeSwitchButton)
-
         micButton?.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -54,14 +40,28 @@ class VoiceInputIME : InputMethodService() {
             }
         }
 
-        switchButton?.setOnClickListener {
-            switchToNextInputMethod(false)
-        }
-
         return view
     }
 
+    private fun refreshProcessor() {
+        val prefsManager = PreferencesManager(
+            getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
+        )
+        val apiKey = prefsManager.getApiKey()
+        if (apiKey.isNullOrBlank()) {
+            processor = null
+        } else {
+            val whisperModel = prefsManager.getWhisperModel()
+            processor = VoiceInputProcessor(
+                AudioRecorder(cacheDir),
+                WhisperClient(apiKey, model = whisperModel),
+                GptConverter(apiKey)
+            )
+        }
+    }
+
     private fun onMicPressed() {
+        refreshProcessor()
         val proc = processor ?: run {
             Toast.makeText(this, "APIキーが設定されていません", Toast.LENGTH_SHORT).show()
             return

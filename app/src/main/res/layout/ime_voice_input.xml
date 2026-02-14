@@ -49,15 +49,6 @@
             android:contentDescription="@string/ime_mic_description"
             android:layout_marginStart="8dp" />
 
-        <ImageButton
-            android:id="@+id/imeSwitchButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_keyboard"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/ime_switch_keyboard"
-            android:layout_marginStart="8dp" />
-
     </LinearLayout>
 
 </LinearLayout>

@@ -33,6 +33,19 @@
         android:text="@string/save_api_key"
         android:layout_marginTop="16dp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/whisper_model_label"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/modelSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/imeSettingsButton"
         android:layout_width="match_parent"

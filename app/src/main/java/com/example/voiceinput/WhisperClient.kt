@@ -11,7 +11,8 @@ import java.util.concurrent.TimeUnit
 
 class WhisperClient(
     private val apiKey: String,
-    private val baseUrl: String = "https://api.openai.com/"
+    private val baseUrl: String = "https://api.openai.com/",
+    private val model: String = "gpt-4o-transcribe"
 ) {
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -26,7 +27,7 @@ class WhisperClient(
                 audioFile.name,
                 audioFile.asRequestBody("audio/wav".toMediaType())
             )
-            .addFormDataPart("model", "gpt-4o-transcribe")
+            .addFormDataPart("model", model)
             .addFormDataPart("language", "ja")
             .build()
 

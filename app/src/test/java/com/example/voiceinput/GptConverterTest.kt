@@ -69,7 +69,7 @@ class GptConverterTest {
     }
 
     @Test
-    fun `convert includes system prompt with conversion rules`() {
+    fun `convert includes system prompt with text correction focus`() {
         server.enqueue(
             MockResponse()
                 .setBody(chatResponse("ls -la"))
@@ -80,7 +80,7 @@ class GptConverterTest {
         converter.convert("ファイル一覧を表示して")
 
         val body = server.takeRequest().body.readUtf8()
-        assertTrue(body.contains("音声入力アシスタント"))
-        assertTrue(body.contains("コマンド"))
+        assertTrue(body.contains("誤字"))
+        assertTrue(body.contains("回答"))
     }
 }

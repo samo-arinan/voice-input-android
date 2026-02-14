@@ -6,10 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -49,7 +46,28 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         }
 
+        setupModelSpinner()
         requestMicrophonePermission()
+    }
+
+    private val whisperModels = arrayOf("gpt-4o-transcribe", "whisper-1")
+
+    private fun setupModelSpinner() {
+        val spinner = findViewById<Spinner>(R.id.modelSpinner)
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, whisperModels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        val currentModel = prefsManager.getWhisperModel()
+        val index = whisperModels.indexOf(currentModel)
+        if (index >= 0) spinner.setSelection(index)
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                prefsManager.saveWhisperModel(whisperModels[position])
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     private fun requestMicrophonePermission() {

@@ -53,4 +53,23 @@ class PreferencesManagerTest {
         every { sharedPreferences.getString("openai_api_key", null) } returns null
         assertFalse(manager.hasApiKey())
     }
+
+    @Test
+    fun `saveWhisperModel stores model in preferences`() {
+        manager.saveWhisperModel("whisper-1")
+        verify { editor.putString("whisper_model", "whisper-1") }
+        verify { editor.apply() }
+    }
+
+    @Test
+    fun `getWhisperModel returns stored model`() {
+        every { sharedPreferences.getString("whisper_model", "gpt-4o-transcribe") } returns "whisper-1"
+        assertEquals("whisper-1", manager.getWhisperModel())
+    }
+
+    @Test
+    fun `getWhisperModel returns default when not set`() {
+        every { sharedPreferences.getString("whisper_model", "gpt-4o-transcribe") } returns "gpt-4o-transcribe"
+        assertEquals("gpt-4o-transcribe", manager.getWhisperModel())
+    }
 }

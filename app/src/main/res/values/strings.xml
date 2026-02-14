@@ -11,4 +11,5 @@
     <string name="ime_hint">長押しで音声入力</string>
     <string name="ime_mic_description">マイクボタン</string>
     <string name="ime_switch_keyboard">キーボード切替</string>
+    <string name="whisper_model_label">音声認識モデル</string>
 </resources>
