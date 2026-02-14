@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Voice Input</string>
+    <string name="api_key_hint">OpenAI API Key</string>
+    <string name="save_api_key">APIキーを保存</string>
+    <string name="open_ime_settings">入力方法の設定を開く</string>
+    <string name="api_key_saved">APIキーを保存しました</string>
+    <string name="api_key_empty">APIキーを入力してください</string>
+    <string name="ime_enabled">IME: 有効</string>
+    <string name="ime_disabled">IME: 無効（設定で有効にしてください）</string>
+    <string name="ime_hint">長押しで音声入力</string>
+    <string name="ime_mic_description">マイクボタン</string>
+    <string name="ime_switch_keyboard">キーボード切替</string>
+</resources>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/imeStatusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ime_hint"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <ImageView
+        android:id="@+id/imeMicButton"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/ic_mic"
+        android:background="@drawable/mic_button_background"
+        android:padding="16dp"
+        android:contentDescription="@string/ime_mic_description"
+        android:layout_marginBottom="12dp" />
+
+    <ImageButton
+        android:id="@+id/imeSwitchButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_keyboard"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/ime_switch_keyboard"
+        android:layout_marginBottom="8dp" />
+
+</LinearLayout>
