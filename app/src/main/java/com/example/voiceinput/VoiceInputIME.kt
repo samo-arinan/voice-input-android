@@ -102,12 +102,18 @@ class VoiceInputIME : InputMethodService() {
                         getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
                     )
                     val apiKey = prefsManager.getApiKey() ?: return@launch
-                    val converter = GptConverter(apiKey)
+                    val proc = processor
+                    val converter = if (proc != null) {
+                        // Reuse OkHttpClient from processor's GptConverter
+                        proc.gptConverter
+                    } else {
+                        GptConverter(apiKey)
+                    }
                     val candidates = withContext(Dispatchers.IO) {
                         converter.convertHiraganaToKanji(hiragana)
                     }
                     if (candidates.isNotEmpty()) {
-                        showKanjiCandidatePopup(candidates)
+                        showKanjiCandidatePopup(candidates, hiragana)
                     }
                 }
             }
@@ -400,7 +406,9 @@ class VoiceInputIME : InputMethodService() {
         // Auto-learn the correction
         val originalFragment = fullText.substring(selStart, selEnd)
         if (originalFragment != replacement) {
-            correctionRepo?.save(originalFragment, replacement)
+            serviceScope.launch(Dispatchers.IO) {
+                correctionRepo?.save(originalFragment, replacement)
+            }
         }
     }
 
@@ -414,7 +422,7 @@ class VoiceInputIME : InputMethodService() {
         voiceModeArea?.visibility = View.VISIBLE
     }
 
-    private fun showKanjiCandidatePopup(candidates: List<String>) {
+    private fun showKanjiCandidatePopup(candidates: List<String>, hiragana: String) {
         val anchor = flickKeyboard ?: return
         val popup = PopupMenu(this, anchor)
 
@@ -426,6 +434,11 @@ class VoiceInputIME : InputMethodService() {
             val selected = candidates[item.itemId]
             composingBuffer.clear()
             currentInputConnection?.commitText(selected, 1)
+            if (hiragana != selected) {
+                serviceScope.launch(Dispatchers.IO) {
+                    correctionRepo?.save(hiragana, selected)
+                }
+            }
             true
         }
         popup.show()
@@ -434,6 +447,11 @@ class VoiceInputIME : InputMethodService() {
     private fun hideCandidateAreaDelayed() {
         candidateArea?.visibility = View.GONE
         currentFullText = null
+    }
+
+    override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        composingBuffer.clear()
     }
 
     override fun onDestroy() {

@@ -10,6 +10,7 @@ class CorrectionRepository(
 ) {
     private val gson = Gson()
 
+    @Synchronized
     fun save(original: String, corrected: String) {
         val entries = loadAll().toMutableList()
         val existing = entries.find { it.original == original && it.corrected == corrected }
@@ -27,6 +28,7 @@ class CorrectionRepository(
         persist(entries)
     }
 
+    @Synchronized
     fun getTopCorrections(limit: Int): List<CorrectionEntry> {
         return loadAll()
             .sortedByDescending { it.frequency }

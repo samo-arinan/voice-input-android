@@ -6,7 +6,7 @@ import kotlinx.coroutines.withContext
 class VoiceInputProcessor(
     private val audioRecorder: AudioRecorder,
     private val whisperClient: WhisperClient,
-    private val gptConverter: GptConverter
+    val gptConverter: GptConverter
 ) {
     val isRecording: Boolean
         get() = audioRecorder.isRecording
