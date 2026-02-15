@@ -30,9 +30,4 @@ class AudioRecorderTest {
         assertFalse(recorder.isRecording)
     }
 
-    @Test
-    fun `getAmplitude returns 0 when not recording`() {
-        val recorder = AudioRecorder(outputDir)
-        assertEquals(0, recorder.getAmplitude())
-    }
 }

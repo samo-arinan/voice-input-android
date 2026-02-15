@@ -127,13 +127,6 @@ class VoiceInputProcessorTest {
     }
 
     @Test
-    fun `getAmplitude delegates to audioRecorder`() {
-        every { audioRecorder.getAmplitude() } returns 3000
-        assertEquals(3000, processor.getAmplitude())
-        verify { audioRecorder.getAmplitude() }
-    }
-
-    @Test
     fun `isRecording delegates to audioRecorder`() {
         every { audioRecorder.isRecording } returns true
         assertTrue(processor.isRecording)

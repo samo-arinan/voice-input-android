@@ -16,9 +16,6 @@ class AudioRecorder(private val outputDir: File) {
     var isRecording: Boolean = false
         private set
 
-    @Volatile
-    private var lastAmplitude: Int = 0
-
     companion object {
         const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
@@ -65,7 +62,6 @@ class AudioRecorder(private val outputDir: File) {
                         synchronized(bufferLock) {
                             pcmBuffer?.write(buffer, 0, bytesRead)
                         }
-                        lastAmplitude = calculateAmplitude(buffer, bytesRead)
                     }
                 }
             }.also { it.start() }
@@ -77,11 +73,6 @@ class AudioRecorder(private val outputDir: File) {
             pcmBuffer = null
             false
         }
-    }
-
-    fun getAmplitude(): Int {
-        if (!isRecording) return 0
-        return lastAmplitude
     }
 
     fun stop(): File? {
@@ -110,13 +101,4 @@ class AudioRecorder(private val outputDir: File) {
         return outputFile
     }
 
-    private fun calculateAmplitude(buffer: ByteArray, bytesRead: Int): Int {
-        var maxAmplitude = 0
-        for (i in 0 until bytesRead - 1 step 2) {
-            val sample = (buffer[i].toInt() and 0xFF) or (buffer[i + 1].toInt() shl 8)
-            val abs = kotlin.math.abs(sample.toShort().toInt())
-            if (abs > maxAmplitude) maxAmplitude = abs
-        }
-        return maxAmplitude
-    }
 }

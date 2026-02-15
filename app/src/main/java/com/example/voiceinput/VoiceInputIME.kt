@@ -31,8 +31,6 @@ class VoiceInputIME : InputMethodService() {
     private var isHoldRecording = false
     private var longPressRunnable: Runnable? = null
     private val handler = Handler(Looper.getMainLooper())
-    private var micButtonRing: MicButtonRingView? = null
-    private var amplitudePoller: Runnable? = null
     private var voiceModeArea: LinearLayout? = null
     private var flickKeyboard: FlickKeyboardView? = null
     private var keyboardToggleButton: ImageButton? = null
@@ -40,8 +38,6 @@ class VoiceInputIME : InputMethodService() {
     private var composingBuffer = StringBuilder()
     private companion object {
         const val LONG_PRESS_DELAY = 500L
-        const val AMPLITUDE_POLL_INTERVAL = 100L
-        const val AMPLITUDE_THRESHOLD = 5000f
     }
 
     override fun onCreateInputView(): View {
@@ -51,7 +47,6 @@ class VoiceInputIME : InputMethodService() {
 
         statusText = view.findViewById(R.id.imeStatusText)
         micButton = view.findViewById(R.id.imeMicButton)
-        micButtonRing = view.findViewById(R.id.micButtonRing)
         candidateArea = view.findViewById(R.id.candidateArea)
         candidateText = view.findViewById(R.id.candidateText)
         candidateButton = view.findViewById(R.id.candidateButton)
@@ -242,7 +237,6 @@ class VoiceInputIME : InputMethodService() {
                 hideCandidateArea()
             }
             micButton?.alpha = 0.5f
-            startAmplitudePolling()
         } else {
             replacementRange = null
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
@@ -253,7 +247,6 @@ class VoiceInputIME : InputMethodService() {
         val proc = processor ?: return
         if (!proc.isRecording) return
 
-        stopAmplitudePolling()
         micButton?.alpha = 1.0f
         val range = replacementRange
         replacementRange = null
@@ -263,25 +256,6 @@ class VoiceInputIME : InputMethodService() {
         } else {
             onMicReleasedForNewInput(proc)
         }
-    }
-
-    private fun startAmplitudePolling() {
-        micButtonRing?.showRing()
-        amplitudePoller = object : Runnable {
-            override fun run() {
-                val amplitude = processor?.getAmplitude() ?: 0
-                val normalized = (amplitude / AMPLITUDE_THRESHOLD).coerceIn(0f, 1f)
-                micButtonRing?.setAmplitude(normalized)
-                handler.postDelayed(this, AMPLITUDE_POLL_INTERVAL)
-            }
-        }
-        handler.post(amplitudePoller!!)
-    }
-
-    private fun stopAmplitudePolling() {
-        amplitudePoller?.let { handler.removeCallbacks(it) }
-        amplitudePoller = null
-        micButtonRing?.hideRing()
     }
 
     private fun onMicReleasedForNewInput(proc: VoiceInputProcessor) {

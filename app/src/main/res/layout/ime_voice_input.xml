@@ -63,22 +63,14 @@
             android:contentDescription="キーボード切替"
             android:layout_marginEnd="8dp" />
 
-        <com.example.voiceinput.MicButtonRingView
-            android:id="@+id/micButtonRing"
-            android:layout_width="64dp"
-            android:layout_height="64dp">
-
-            <ImageView
-                android:id="@+id/imeMicButton"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_mic"
-                android:background="@drawable/mic_button_background"
-                android:padding="14dp"
-                android:contentDescription="@string/ime_mic_description" />
-
-        </com.example.voiceinput.MicButtonRingView>
+        <ImageView
+            android:id="@+id/imeMicButton"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/ic_mic"
+            android:background="@drawable/mic_button_background"
+            android:padding="14dp"
+            android:contentDescription="@string/ime_mic_description" />
 
     </LinearLayout>
 
