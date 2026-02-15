@@ -11,6 +11,10 @@ class VoiceInputProcessor(
     val isRecording: Boolean
         get() = audioRecorder.isRecording
 
+    fun getAmplitude(): Int {
+        return audioRecorder.getAmplitude()
+    }
+
     fun startRecording(): Boolean {
         return audioRecorder.start()
     }
