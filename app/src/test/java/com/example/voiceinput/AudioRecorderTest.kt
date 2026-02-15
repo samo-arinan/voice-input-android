@@ -16,11 +16,12 @@ class AudioRecorderTest {
     }
 
     @Test
-    fun `getOutputFile returns file in specified directory with m4a extension`() {
+    fun `getOutputFile returns file in specified directory with wav extension`() {
         val recorder = AudioRecorder(outputDir)
         val file = recorder.getOutputFile()
         assertEquals(outputDir, file.parentFile)
-        assertTrue(file.name.endsWith(".m4a"))
+        assertTrue(file.name.endsWith(".wav"))
+        assertTrue(file.name.startsWith("voice_"))
     }
 
     @Test
