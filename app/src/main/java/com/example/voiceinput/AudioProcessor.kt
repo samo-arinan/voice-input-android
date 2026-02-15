@@ -35,6 +35,53 @@ object AudioProcessor {
         return result
     }
 
+    fun compress(
+        pcmData: ByteArray,
+        thresholdDb: Double = -30.0,
+        ratio: Double = 2.5,
+        attackMs: Double = 10.0,
+        releaseMs: Double = 80.0,
+        sampleRate: Int = 16000
+    ): ByteArray {
+        if (pcmData.isEmpty()) return pcmData
+
+        val samples = ShortArray(pcmData.size / 2)
+        ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
+
+        val thresholdLinear = 32767.0 * Math.pow(10.0, thresholdDb / 20.0)
+        val attackCoeff = kotlin.math.exp(-1.0 / (attackMs * sampleRate / 1000.0))
+        val releaseCoeff = kotlin.math.exp(-1.0 / (releaseMs * sampleRate / 1000.0))
+
+        var envelope = 0.0
+        val output = ShortArray(samples.size)
+
+        for (i in samples.indices) {
+            val inputAbs = kotlin.math.abs(samples[i].toDouble())
+
+            // Envelope follower
+            envelope = if (inputAbs > envelope) {
+                attackCoeff * envelope + (1.0 - attackCoeff) * inputAbs
+            } else {
+                releaseCoeff * envelope + (1.0 - releaseCoeff) * inputAbs
+            }
+
+            // Compute gain reduction
+            val gain = if (envelope > thresholdLinear) {
+                val overDb = 20.0 * kotlin.math.log10(envelope / thresholdLinear)
+                val reducedDb = overDb * (1.0 - 1.0 / ratio)
+                Math.pow(10.0, -reducedDb / 20.0)
+            } else {
+                1.0
+            }
+
+            output[i] = (samples[i] * gain).toInt().coerceIn(-32768, 32767).toShort()
+        }
+
+        val result = ByteArray(output.size * 2)
+        ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(output)
+        return result
+    }
+
     fun encodeWav(pcmData: ByteArray, sampleRate: Int, outputFile: File) {
         val channels = 1
         val bitsPerSample = 16

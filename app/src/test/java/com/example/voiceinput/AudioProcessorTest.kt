@@ -83,6 +83,39 @@ class AudioProcessorTest {
         assertTrue("Should stay similar: ratio=$ratio", ratio in 0.5..1.5)
     }
 
+    @Test
+    fun `compress reduces dynamic range`() {
+        // ダイナミックレンジが広い信号: 前半小さい、後半大きい
+        val samples = ShortArray(16000) { i ->
+            val amplitude = if (i < 8000) 500 else 15000
+            (amplitude * kotlin.math.sin(2.0 * Math.PI * 440.0 * i / 16000)).toInt().toShort()
+        }
+        val pcmData = ByteArray(samples.size * 2)
+        ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(samples)
+
+        val compressed = AudioProcessor.compress(pcmData)
+        val compressedSamples = ShortArray(compressed.size / 2)
+        ByteBuffer.wrap(compressed).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(compressedSamples)
+
+        // 前半と後半のRMSの比率が、元より小さくなっていること（＝ダイナミックレンジ圧縮）
+        val origQuietRms = rmsOfRange(samples, 2000, 6000) // 安定区間
+        val origLoudRms = rmsOfRange(samples, 10000, 14000)
+        val compQuietRms = rmsOfRange(compressedSamples, 2000, 6000)
+        val compLoudRms = rmsOfRange(compressedSamples, 10000, 14000)
+
+        val origRatio = origLoudRms / origQuietRms
+        val compRatio = compLoudRms / compQuietRms
+
+        assertTrue("Dynamic range should be reduced: origRatio=$origRatio, compRatio=$compRatio",
+            compRatio < origRatio)
+    }
+
+    private fun rmsOfRange(samples: ShortArray, from: Int, to: Int): Double {
+        val slice = samples.sliceArray(from until to)
+        val sumSquares = slice.sumOf { it.toDouble() * it.toDouble() }
+        return kotlin.math.sqrt(sumSquares / slice.size)
+    }
+
     private fun calculateRms(pcmData: ByteArray): Double {
         val samples = ShortArray(pcmData.size / 2)
         ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
