@@ -156,6 +156,36 @@ class VoiceInputProcessorTest {
     }
 
     @Test
+    fun `stopAndProcess uses convertWithHistory when corrections provided`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile, any()) } returns "おはよう御座います"
+        val corrections = listOf(CorrectionEntry("おはよう御座います", "おはようございます", 5))
+        every { gptConverter.convertWithHistory("おはよう御座います", corrections) } returns "おはようございます"
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndProcess(corrections = corrections)
+
+        assertNotNull(result)
+        verify { gptConverter.convertWithHistory("おはよう御座います", corrections) }
+        verify(exactly = 0) { gptConverter.convert(any()) }
+    }
+
+    @Test
+    fun `stopAndProcess with null corrections uses convert`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile, any()) } returns "テスト"
+        every { gptConverter.convert("テスト") } returns "テスト"
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndProcess()
+
+        assertNotNull(result)
+        verify { gptConverter.convert("テスト") }
+    }
+
+    @Test
     fun `stopAndTranscribeOnly passes context to whisper`() = runTest {
         val audioFile = mockk<File>()
         every { audioRecorder.stop() } returns audioFile

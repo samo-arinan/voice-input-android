@@ -30,7 +30,10 @@ class VoiceInputProcessor(
         }
     }
 
-    suspend fun stopAndProcess(context: String? = null): List<ConversionChunk>? {
+    suspend fun stopAndProcess(
+        context: String? = null,
+        corrections: List<CorrectionEntry>? = null
+    ): List<ConversionChunk>? {
         val audioFile = audioRecorder.stop() ?: return null
 
         try {
@@ -39,7 +42,11 @@ class VoiceInputProcessor(
             } ?: return null
 
             val convertedText = withContext(Dispatchers.IO) {
-                gptConverter.convert(rawText)
+                if (corrections != null) {
+                    gptConverter.convertWithHistory(rawText, corrections)
+                } else {
+                    gptConverter.convert(rawText)
+                }
             }
 
             return TextDiffer.diff(rawText, convertedText)
