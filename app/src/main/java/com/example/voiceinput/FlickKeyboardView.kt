@@ -60,7 +60,6 @@ interface FlickKeyboardListener {
     fun onBackspace()
     fun onConvert()
     fun onConfirm()
-    fun onSwitchToVoice()
 }
 
 class FlickKeyboardView @JvmOverloads constructor(
@@ -89,7 +88,7 @@ class FlickKeyboardView @JvmOverloads constructor(
             addFlickKey(keys[i])
         }
         // Row 3: 🎤 ⌫ 変換 確定
-        addActionButton("🎤", 1) { listener?.onSwitchToVoice() }
+        addActionButton("、", 1) { listener?.onCharacterInput("、") }
         addActionButton("⌫", 1) { listener?.onBackspace() }
         addActionButton("変換", 2) { listener?.onConvert() }
         addActionButton("確定", 1) { listener?.onConfirm() }

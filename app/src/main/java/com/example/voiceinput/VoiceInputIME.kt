@@ -20,7 +20,7 @@ class VoiceInputIME : InputMethodService() {
     private var processor: VoiceInputProcessor? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var statusText: TextView? = null
-    private var micButton: ImageView? = null
+    private var modeIcon: ImageView? = null
     private var candidateArea: LinearLayout? = null
     private var candidateText: TextView? = null
     private var candidateButton: Button? = null
@@ -29,11 +29,11 @@ class VoiceInputIME : InputMethodService() {
     private var replacementRange: Pair<Int, Int>? = null
     private var isToggleRecording = false
     private var isHoldRecording = false
+    private var isFlickMode = false
     private var longPressRunnable: Runnable? = null
     private val handler = Handler(Looper.getMainLooper())
     private var voiceModeArea: LinearLayout? = null
     private var flickKeyboard: FlickKeyboardView? = null
-    private var keyboardToggleButton: ImageButton? = null
     private var correctionRepo: CorrectionRepository? = null
     private var composingBuffer = StringBuilder()
     private companion object {
@@ -46,7 +46,7 @@ class VoiceInputIME : InputMethodService() {
         refreshProcessor()
 
         statusText = view.findViewById(R.id.imeStatusText)
-        micButton = view.findViewById(R.id.imeMicButton)
+        modeIcon = view.findViewById(R.id.modeIcon)
         candidateArea = view.findViewById(R.id.candidateArea)
         candidateText = view.findViewById(R.id.candidateText)
         candidateButton = view.findViewById(R.id.candidateButton)
@@ -55,15 +55,10 @@ class VoiceInputIME : InputMethodService() {
 
         voiceModeArea = view.findViewById(R.id.voiceModeArea)
         flickKeyboard = view.findViewById(R.id.flickKeyboard)
-        keyboardToggleButton = view.findViewById(R.id.keyboardToggleButton)
 
         // Initialize correction repository
         val correctionsFile = File(filesDir, "corrections.json")
         correctionRepo = CorrectionRepository(correctionsFile)
-
-        keyboardToggleButton?.setOnClickListener {
-            showFlickKeyboard()
-        }
 
         flickKeyboard?.listener = object : FlickKeyboardListener {
             override fun onCharacterInput(char: String) {
@@ -119,14 +114,6 @@ class VoiceInputIME : InputMethodService() {
                     composingBuffer.clear()
                 }
             }
-
-            override fun onSwitchToVoice() {
-                if (composingBuffer.isNotEmpty()) {
-                    currentInputConnection?.finishComposingText()
-                    composingBuffer.clear()
-                }
-                showVoiceMode()
-            }
         }
 
         val noopActionModeCallback = object : ActionMode.Callback {
@@ -143,6 +130,7 @@ class VoiceInputIME : InputMethodService() {
 
         val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
+                if (isFlickMode) return false
                 longPressRunnable?.let { handler.removeCallbacks(it) }
                 longPressRunnable = null
                 if (!isToggleRecording && !isHoldRecording) {
@@ -153,19 +141,36 @@ class VoiceInputIME : InputMethodService() {
             }
 
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                if (isFlickMode) return false
                 if (isToggleRecording) {
                     isToggleRecording = false
                     onMicReleased()
                 }
                 return true
             }
+
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                if (e1 == null) return false
+                val dy = e2.y - e1.y
+                val dx = e2.x - e1.x
+                // Only trigger on vertical fling (dy > dx) with minimum distance
+                if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30) {
+                    if (isFlickMode) {
+                        showVoiceMode()
+                    } else {
+                        showFlickKeyboard()
+                    }
+                    return true
+                }
+                return false
+            }
         })
 
-        micButton?.setOnTouchListener { _, event ->
+        modeIcon?.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    if (!isToggleRecording) {
+                    if (!isFlickMode && !isToggleRecording) {
                         longPressRunnable = Runnable {
                             isHoldRecording = true
                             onMicPressed()
@@ -236,7 +241,7 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "録音中..."
                 hideCandidateArea()
             }
-            micButton?.alpha = 0.5f
+            modeIcon?.alpha = 0.5f
         } else {
             replacementRange = null
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
@@ -247,7 +252,7 @@ class VoiceInputIME : InputMethodService() {
         val proc = processor ?: return
         if (!proc.isRecording) return
 
-        micButton?.alpha = 1.0f
+        modeIcon?.alpha = 1.0f
         val range = replacementRange
         replacementRange = null
 
@@ -387,13 +392,21 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private fun showFlickKeyboard() {
+        isFlickMode = true
         voiceModeArea?.visibility = View.GONE
         flickKeyboard?.visibility = View.VISIBLE
+        modeIcon?.setImageResource(R.drawable.ic_keyboard)
     }
 
     private fun showVoiceMode() {
+        isFlickMode = false
+        if (composingBuffer.isNotEmpty()) {
+            currentInputConnection?.finishComposingText()
+            composingBuffer.clear()
+        }
         flickKeyboard?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
+        modeIcon?.setImageResource(R.drawable.ic_mic)
     }
 
     private fun showKanjiCandidatePopup(candidates: List<String>, hiragana: String) {
