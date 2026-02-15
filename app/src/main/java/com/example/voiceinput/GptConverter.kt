@@ -32,6 +32,13 @@ class GptConverter(
             - 余計な説明は一切付けず、修正結果のみを返す
         """.trimIndent()
 
+        private val KANJI_PROMPT = """
+            ひらがなテキストの漢字変換候補を3〜5個生成してください。
+            最も自然な変換を先頭にしてください。
+            JSON配列のみを返してください。説明は不要です。
+            例: 入力「きょう」→ ["今日", "京", "教"]
+        """.trimIndent()
+
         private val CANDIDATES_PROMPT = """
             テキストの変換候補を3〜5個生成してください。
             漢字変換、別の表現、コマンド変換など、ユーザーが意図しそうな候補を出してください。
@@ -59,6 +66,16 @@ class GptConverter(
             """.trimIndent()
         }
         return callGpt(prompt, rawText) ?: rawText
+    }
+
+    fun convertHiraganaToKanji(hiragana: String): List<String> {
+        val response = callGpt(KANJI_PROMPT, hiragana) ?: return emptyList()
+        return try {
+            val jsonArray = JsonParser.parseString(response).asJsonArray
+            jsonArray.map { it.asString }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     fun getCandidates(text: String): List<String> {

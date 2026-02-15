@@ -169,6 +169,34 @@ class GptConverterTest {
     }
 
     @Test
+    fun `convertHiraganaToKanji returns kanji candidates`() {
+        val candidatesJson = """["今日は", "京は", "きょうは"]"""
+        server.enqueue(
+            MockResponse()
+                .setBody("""{"choices":[{"message":{"content":${Gson().toJson(candidatesJson)}}}]}""")
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val result = converter.convertHiraganaToKanji("きょうは")
+
+        assertEquals(3, result.size)
+        assertEquals("今日は", result[0])
+
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue(body.contains("きょうは"))
+        assertTrue(body.contains("漢字"))
+    }
+
+    @Test
+    fun `convertHiraganaToKanji returns empty list on error`() {
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        val result = converter.convertHiraganaToKanji("てすと")
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
     fun `convert includes system prompt with text correction focus`() {
         server.enqueue(
             MockResponse()
