@@ -12,6 +12,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.*
+import java.io.File
 import kotlinx.coroutines.*
 
 class VoiceInputIME : InputMethodService() {
@@ -32,6 +33,11 @@ class VoiceInputIME : InputMethodService() {
     private val handler = Handler(Looper.getMainLooper())
     private var micButtonRing: MicButtonRingView? = null
     private var amplitudePoller: Runnable? = null
+    private var voiceModeArea: LinearLayout? = null
+    private var flickKeyboard: FlickKeyboardView? = null
+    private var keyboardToggleButton: ImageButton? = null
+    private var correctionRepo: CorrectionRepository? = null
+    private var composingBuffer = StringBuilder()
     private companion object {
         const val LONG_PRESS_DELAY = 500L
         const val AMPLITUDE_POLL_INTERVAL = 100L
@@ -51,6 +57,76 @@ class VoiceInputIME : InputMethodService() {
         candidateButton = view.findViewById(R.id.candidateButton)
 
         candidateButton?.setOnClickListener { onCandidateButtonTap() }
+
+        voiceModeArea = view.findViewById(R.id.voiceModeArea)
+        flickKeyboard = view.findViewById(R.id.flickKeyboard)
+        keyboardToggleButton = view.findViewById(R.id.keyboardToggleButton)
+
+        // Initialize correction repository
+        val correctionsFile = File(filesDir, "corrections.json")
+        correctionRepo = CorrectionRepository(correctionsFile)
+
+        keyboardToggleButton?.setOnClickListener {
+            showFlickKeyboard()
+        }
+
+        flickKeyboard?.listener = object : FlickKeyboardListener {
+            override fun onCharacterInput(char: String) {
+                composingBuffer.append(char)
+                currentInputConnection?.setComposingText(composingBuffer.toString(), 1)
+            }
+
+            override fun onBackspace() {
+                if (composingBuffer.isNotEmpty()) {
+                    composingBuffer.deleteCharAt(composingBuffer.length - 1)
+                    if (composingBuffer.isEmpty()) {
+                        currentInputConnection?.finishComposingText()
+                    } else {
+                        currentInputConnection?.setComposingText(composingBuffer.toString(), 1)
+                    }
+                } else {
+                    currentInputConnection?.sendKeyEvent(
+                        KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL)
+                    )
+                    currentInputConnection?.sendKeyEvent(
+                        KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL)
+                    )
+                }
+            }
+
+            override fun onConvert() {
+                if (composingBuffer.isEmpty()) return
+                val hiragana = composingBuffer.toString()
+                serviceScope.launch {
+                    val prefsManager = PreferencesManager(
+                        getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
+                    )
+                    val apiKey = prefsManager.getApiKey() ?: return@launch
+                    val converter = GptConverter(apiKey)
+                    val candidates = withContext(Dispatchers.IO) {
+                        converter.convertHiraganaToKanji(hiragana)
+                    }
+                    if (candidates.isNotEmpty()) {
+                        showKanjiCandidatePopup(candidates)
+                    }
+                }
+            }
+
+            override fun onConfirm() {
+                if (composingBuffer.isNotEmpty()) {
+                    currentInputConnection?.finishComposingText()
+                    composingBuffer.clear()
+                }
+            }
+
+            override fun onSwitchToVoice() {
+                if (composingBuffer.isNotEmpty()) {
+                    currentInputConnection?.finishComposingText()
+                    composingBuffer.clear()
+                }
+                showVoiceMode()
+            }
+        }
 
         val noopActionModeCallback = object : ActionMode.Callback {
             override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = true
@@ -206,7 +282,8 @@ class VoiceInputIME : InputMethodService() {
         statusText?.text = "変換中..."
 
         serviceScope.launch {
-            val chunks = proc.stopAndProcess()
+            val corrections = correctionRepo?.getTopCorrections(20)
+            val chunks = proc.stopAndProcess(corrections = corrections)
             if (chunks != null) {
                 val fullText = chunks.joinToString("") { it.displayText }
                 committedTextLength = fullText.length
@@ -319,6 +396,39 @@ class VoiceInputIME : InputMethodService() {
         committedTextLength = newText.length
         currentFullText = newText
         showCandidateArea(newText)
+
+        // Auto-learn the correction
+        val originalFragment = fullText.substring(selStart, selEnd)
+        if (originalFragment != replacement) {
+            correctionRepo?.save(originalFragment, replacement)
+        }
+    }
+
+    private fun showFlickKeyboard() {
+        voiceModeArea?.visibility = View.GONE
+        flickKeyboard?.visibility = View.VISIBLE
+    }
+
+    private fun showVoiceMode() {
+        flickKeyboard?.visibility = View.GONE
+        voiceModeArea?.visibility = View.VISIBLE
+    }
+
+    private fun showKanjiCandidatePopup(candidates: List<String>) {
+        val anchor = flickKeyboard ?: return
+        val popup = PopupMenu(this, anchor)
+
+        candidates.forEachIndexed { i, candidate ->
+            popup.menu.add(0, i, i, candidate)
+        }
+
+        popup.setOnMenuItemClickListener { item ->
+            val selected = candidates[item.itemId]
+            composingBuffer.clear()
+            currentInputConnection?.commitText(selected, 1)
+            true
+        }
+        popup.show()
     }
 
     private fun hideCandidateAreaDelayed() {
