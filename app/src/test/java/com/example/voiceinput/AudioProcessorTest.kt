@@ -116,6 +116,31 @@ class AudioProcessorTest {
         return kotlin.math.sqrt(sumSquares / slice.size)
     }
 
+    @Test
+    fun `processForWhisper applies normalization and compression then outputs WAV`() {
+        // 小声の信号
+        val samples = ShortArray(16000) { i ->
+            (300 * kotlin.math.sin(2.0 * Math.PI * 440.0 * i / 16000)).toInt().toShort()
+        }
+        val pcmData = ByteArray(samples.size * 2)
+        ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(samples)
+
+        val outputFile = File(outputDir, "processed.wav")
+        AudioProcessor.processForWhisper(pcmData, sampleRate = 16000, outputFile = outputFile)
+
+        assertTrue(outputFile.exists())
+        // WAV header (44) + processed PCM data (32000)
+        assertEquals(32044L, outputFile.length())
+
+        // 処理済みPCMのRMSが元より大きいこと
+        val wavData = outputFile.readBytes()
+        val processedPcm = wavData.copyOfRange(44, wavData.size)
+        val processedRms = calculateRms(processedPcm)
+        val originalRms = calculateRms(pcmData)
+        assertTrue("Processed should be louder: orig=$originalRms, proc=$processedRms",
+            processedRms > originalRms * 2)
+    }
+
     private fun calculateRms(pcmData: ByteArray): Double {
         val samples = ShortArray(pcmData.size / 2)
         ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)

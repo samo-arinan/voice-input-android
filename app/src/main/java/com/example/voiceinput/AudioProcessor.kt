@@ -82,6 +82,12 @@ object AudioProcessor {
         return result
     }
 
+    fun processForWhisper(pcmData: ByteArray, sampleRate: Int, outputFile: File) {
+        val normalized = normalizeRms(pcmData)
+        val compressed = compress(normalized, sampleRate = sampleRate)
+        encodeWav(compressed, sampleRate, outputFile)
+    }
+
     fun encodeWav(pcmData: ByteArray, sampleRate: Int, outputFile: File) {
         val channels = 1
         val bitsPerSample = 16
