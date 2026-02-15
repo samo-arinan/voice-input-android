@@ -19,8 +19,8 @@ class WhisperClient(
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    fun transcribe(audioFile: File): String? {
-        val requestBody = MultipartBody.Builder()
+    fun transcribe(audioFile: File, prompt: String? = null): String? {
+        val builder = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
                 "file",
@@ -29,7 +29,13 @@ class WhisperClient(
             )
             .addFormDataPart("model", model)
             .addFormDataPart("language", "ja")
-            .build()
+            .addFormDataPart("temperature", "0")
+
+        if (!prompt.isNullOrBlank()) {
+            builder.addFormDataPart("prompt", prompt)
+        }
+
+        val requestBody = builder.build()
 
         val request = Request.Builder()
             .url("${baseUrl}v1/audio/transcriptions")

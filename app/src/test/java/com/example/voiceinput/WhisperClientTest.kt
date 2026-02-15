@@ -91,4 +91,48 @@ class WhisperClientTest {
         val result = client.transcribe(audioFile)
         assertNull(result)
     }
+
+    @Test
+    fun `transcribe sends temperature 0 by default`() {
+        server.enqueue(
+            MockResponse()
+                .setBody("""{"text": "テスト"}""")
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val audioFile = File.createTempFile("test_audio", ".wav").apply {
+            writeBytes(ByteArray(100))
+            deleteOnExit()
+        }
+
+        client.transcribe(audioFile)
+
+        val request = server.takeRequest()
+        val body = request.body.readUtf8()
+        assertTrue("Request body should contain temperature field", body.contains("temperature"))
+        assertTrue("Request body should contain temperature value 0", body.contains("\r\n0\r\n"))
+    }
+
+    @Test
+    fun `transcribe sends prompt when provided`() {
+        server.enqueue(
+            MockResponse()
+                .setBody("""{"text": "テスト"}""")
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val audioFile = File.createTempFile("test_audio", ".wav").apply {
+            writeBytes(ByteArray(100))
+            deleteOnExit()
+        }
+
+        client.transcribe(audioFile, prompt = "前回の文脈です")
+
+        val request = server.takeRequest()
+        val body = request.body.readUtf8()
+        assertTrue("Request body should contain prompt field", body.contains("prompt"))
+        assertTrue("Request body should contain prompt text", body.contains("前回の文脈です"))
+    }
 }
