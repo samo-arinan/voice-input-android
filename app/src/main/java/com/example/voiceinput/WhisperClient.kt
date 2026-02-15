@@ -29,7 +29,6 @@ class WhisperClient(
             )
             .addFormDataPart("model", model)
             .addFormDataPart("language", "ja")
-            .addFormDataPart("temperature", "0")
 
         if (!prompt.isNullOrBlank()) {
             builder.addFormDataPart("prompt", prompt)
