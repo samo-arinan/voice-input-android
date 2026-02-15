@@ -41,6 +41,15 @@ class AudioRecorder(private val outputDir: File) {
         }
     }
 
+    fun getAmplitude(): Int {
+        if (!isRecording) return 0
+        return try {
+            mediaRecorder?.maxAmplitude ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
+
     fun stop(): File? {
         if (!isRecording) return null
         mediaRecorder?.apply {
