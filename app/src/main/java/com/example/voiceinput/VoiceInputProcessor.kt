@@ -19,23 +19,23 @@ class VoiceInputProcessor(
         return audioRecorder.start()
     }
 
-    suspend fun stopAndTranscribeOnly(): String? {
+    suspend fun stopAndTranscribeOnly(context: String? = null): String? {
         val audioFile = audioRecorder.stop() ?: return null
         try {
             return withContext(Dispatchers.IO) {
-                whisperClient.transcribe(audioFile)
+                whisperClient.transcribe(audioFile, prompt = context)
             }
         } finally {
             audioFile.delete()
         }
     }
 
-    suspend fun stopAndProcess(): List<ConversionChunk>? {
+    suspend fun stopAndProcess(context: String? = null): List<ConversionChunk>? {
         val audioFile = audioRecorder.stop() ?: return null
 
         try {
             val rawText = withContext(Dispatchers.IO) {
-                whisperClient.transcribe(audioFile)
+                whisperClient.transcribe(audioFile, prompt = context)
             } ?: return null
 
             val convertedText = withContext(Dispatchers.IO) {

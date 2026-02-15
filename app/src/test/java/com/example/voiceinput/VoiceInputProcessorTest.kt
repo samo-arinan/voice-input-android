@@ -41,7 +41,7 @@ class VoiceInputProcessorTest {
     fun `stopAndProcess returns chunks with diff on success`() = runTest {
         val audioFile = mockk<File>()
         every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns "ギットステータスを確認して"
+        every { whisperClient.transcribe(audioFile, any()) } returns "ギットステータスを確認して"
         every { gptConverter.convert("ギットステータスを確認して") } returns "git statusを確認して"
         every { audioFile.delete() } returns true
 
@@ -58,7 +58,7 @@ class VoiceInputProcessorTest {
     fun `stopAndProcess returns single chunk when texts are identical`() = runTest {
         val audioFile = mockk<File>()
         every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns "こんにちは"
+        every { whisperClient.transcribe(audioFile, any()) } returns "こんにちは"
         every { gptConverter.convert("こんにちは") } returns "こんにちは"
         every { audioFile.delete() } returns true
 
@@ -81,7 +81,7 @@ class VoiceInputProcessorTest {
     fun `stopAndProcess returns null when transcription fails`() = runTest {
         val audioFile = mockk<File>()
         every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns null
+        every { whisperClient.transcribe(audioFile, any()) } returns null
         every { audioFile.delete() } returns true
 
         val result = processor.stopAndProcess()
@@ -94,7 +94,7 @@ class VoiceInputProcessorTest {
     fun `stopAndTranscribeOnly returns raw text without GPT conversion`() = runTest {
         val audioFile = mockk<File>()
         every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns "こんにちは"
+        every { whisperClient.transcribe(audioFile, any()) } returns "こんにちは"
         every { audioFile.delete() } returns true
 
         val result = processor.stopAndTranscribeOnly()
@@ -117,7 +117,7 @@ class VoiceInputProcessorTest {
     fun `stopAndTranscribeOnly returns null when transcription fails`() = runTest {
         val audioFile = mockk<File>()
         every { audioRecorder.stop() } returns audioFile
-        every { whisperClient.transcribe(audioFile) } returns null
+        every { whisperClient.transcribe(audioFile, any()) } returns null
         every { audioFile.delete() } returns true
 
         val result = processor.stopAndTranscribeOnly()
@@ -139,5 +139,32 @@ class VoiceInputProcessorTest {
         assertTrue(processor.isRecording)
         every { audioRecorder.isRecording } returns false
         assertFalse(processor.isRecording)
+    }
+
+    @Test
+    fun `stopAndProcess passes context to whisper`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile, "既存テキスト") } returns "変換前"
+        every { gptConverter.convert("変換前") } returns "変換後"
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndProcess(context = "既存テキスト")
+
+        assertNotNull(result)
+        verify { whisperClient.transcribe(audioFile, "既存テキスト") }
+    }
+
+    @Test
+    fun `stopAndTranscribeOnly passes context to whisper`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile, "文脈") } returns "結果"
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndTranscribeOnly(context = "文脈")
+
+        assertEquals("結果", result)
+        verify { whisperClient.transcribe(audioFile, "文脈") }
     }
 }
