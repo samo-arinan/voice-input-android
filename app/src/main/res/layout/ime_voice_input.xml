@@ -37,8 +37,9 @@
 
     </LinearLayout>
 
-    <!-- ボタン行 -->
+    <!-- 音声入力モード（デフォルト表示） -->
     <LinearLayout
+        android:id="@+id/voiceModeArea"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -53,11 +54,19 @@
             android:text="@string/ime_hint"
             android:textSize="14sp" />
 
+        <ImageButton
+            android:id="@+id/keyboardToggleButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_dialog_dialer"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="キーボード切替"
+            android:layout_marginEnd="8dp" />
+
         <com.example.voiceinput.MicButtonRingView
             android:id="@+id/micButtonRing"
             android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginStart="8dp">
+            android:layout_height="64dp">
 
             <ImageView
                 android:id="@+id/imeMicButton"
@@ -72,5 +81,13 @@
         </com.example.voiceinput.MicButtonRingView>
 
     </LinearLayout>
+
+    <!-- フリックキーボード（デフォルト非表示） -->
+    <com.example.voiceinput.FlickKeyboardView
+        android:id="@+id/flickKeyboard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:visibility="gone" />
 
 </LinearLayout>
