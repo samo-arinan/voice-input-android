@@ -44,6 +44,23 @@ class GptConverter(
         return callGpt(SYSTEM_PROMPT, rawText) ?: rawText
     }
 
+    fun convertWithHistory(rawText: String, corrections: List<CorrectionEntry>): String {
+        val prompt = if (corrections.isEmpty()) {
+            SYSTEM_PROMPT
+        } else {
+            val historyLines = corrections.joinToString("\n") { entry ->
+                "- 「${entry.original}」→「${entry.corrected}」(${entry.frequency}回)"
+            }
+            """
+                $SYSTEM_PROMPT
+
+                以下はユーザーの過去の修正履歴です。同様のパターンがあれば適用してください：
+                $historyLines
+            """.trimIndent()
+        }
+        return callGpt(prompt, rawText) ?: rawText
+    }
+
     fun getCandidates(text: String): List<String> {
         val response = callGpt(CANDIDATES_PROMPT, text) ?: return emptyList()
         return try {

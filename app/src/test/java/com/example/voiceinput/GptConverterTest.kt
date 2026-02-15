@@ -122,6 +122,53 @@ class GptConverterTest {
     }
 
     @Test
+    fun `convertWithHistory includes correction history in system prompt`() {
+        server.enqueue(
+            MockResponse()
+                .setBody(chatResponse("おはようございます"))
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val corrections = listOf(
+            CorrectionEntry("おはよう御座います", "おはようございます", 5),
+            CorrectionEntry("宜しく", "よろしく", 3)
+        )
+
+        val result = converter.convertWithHistory("おはよう御座います", corrections)
+
+        assertEquals("おはようございます", result)
+
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue("Should contain correction original", body.contains("おはよう御座います"))
+        assertTrue("Should contain correction target", body.contains("おはようございます"))
+        assertTrue("Should contain frequency", body.contains("5"))
+    }
+
+    @Test
+    fun `convertWithHistory with empty corrections behaves like convert`() {
+        server.enqueue(
+            MockResponse()
+                .setBody(chatResponse("テスト結果"))
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        val result = converter.convertWithHistory("テスト結果", emptyList())
+        assertEquals("テスト結果", result)
+    }
+
+    @Test
+    fun `convertWithHistory returns original on API error`() {
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        val result = converter.convertWithHistory("テスト", listOf(
+            CorrectionEntry("A", "B", 1)
+        ))
+        assertEquals("テスト", result)
+    }
+
+    @Test
     fun `convert includes system prompt with text correction focus`() {
         server.enqueue(
             MockResponse()
