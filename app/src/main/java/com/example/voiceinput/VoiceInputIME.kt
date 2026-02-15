@@ -25,6 +25,7 @@ class VoiceInputIME : InputMethodService() {
     private var candidateButton: Button? = null
     private var committedTextLength = 0
     private var currentFullText: String? = null
+    private var replacementRange: Pair<Int, Int>? = null
     private var isToggleRecording = false
     private var isHoldRecording = false
     private var longPressRunnable: Runnable? = null
@@ -130,12 +131,32 @@ class VoiceInputIME : InputMethodService() {
             Toast.makeText(this, "APIキーが設定されていません", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // Check if text is selected in candidate area for replacement
+        val tv = candidateText
+        if (tv != null && currentFullText != null) {
+            val start = tv.selectionStart
+            val end = tv.selectionEnd
+            if (start >= 0 && end >= 0 && start != end) {
+                replacementRange = Pair(start, end)
+            } else {
+                replacementRange = null
+            }
+        } else {
+            replacementRange = null
+        }
+
         val started = proc.startRecording()
         if (started) {
-            statusText?.text = "録音中..."
+            if (replacementRange != null) {
+                statusText?.text = "録音中（選択範囲を置換）..."
+            } else {
+                statusText?.text = "録音中..."
+                hideCandidateArea()
+            }
             micButton?.alpha = 0.5f
-            hideCandidateArea()
         } else {
+            replacementRange = null
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
         }
     }
@@ -145,6 +166,17 @@ class VoiceInputIME : InputMethodService() {
         if (!proc.isRecording) return
 
         micButton?.alpha = 1.0f
+        val range = replacementRange
+        replacementRange = null
+
+        if (range != null) {
+            onMicReleasedForReplacement(proc, range)
+        } else {
+            onMicReleasedForNewInput(proc)
+        }
+    }
+
+    private fun onMicReleasedForNewInput(proc: VoiceInputProcessor) {
         statusText?.text = "変換中..."
 
         serviceScope.launch {
@@ -158,6 +190,22 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "完了（テキスト選択→候補）"
             } else {
                 statusText?.text = "変換に失敗しました"
+            }
+            delay(5000)
+            statusText?.text = "長押し/ダブルタップで音声入力"
+        }
+    }
+
+    private fun onMicReleasedForReplacement(proc: VoiceInputProcessor, range: Pair<Int, Int>) {
+        statusText?.text = "音声認識中..."
+
+        serviceScope.launch {
+            val rawText = proc.stopAndTranscribeOnly()
+            if (rawText != null) {
+                replaceRange(range.first, range.second, rawText)
+                statusText?.text = "置換完了（テキスト選択→候補）"
+            } else {
+                statusText?.text = "音声認識に失敗しました"
             }
             delay(5000)
             statusText?.text = "長押し/ダブルタップで音声入力"

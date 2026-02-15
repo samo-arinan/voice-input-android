@@ -91,6 +91,42 @@ class VoiceInputProcessorTest {
     }
 
     @Test
+    fun `stopAndTranscribeOnly returns raw text without GPT conversion`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile) } returns "こんにちは"
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndTranscribeOnly()
+
+        assertEquals("こんにちは", result)
+        verify(exactly = 0) { gptConverter.convert(any()) }
+        verify { audioFile.delete() }
+    }
+
+    @Test
+    fun `stopAndTranscribeOnly returns null when recorder returns null`() = runTest {
+        every { audioRecorder.stop() } returns null
+
+        val result = processor.stopAndTranscribeOnly()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `stopAndTranscribeOnly returns null when transcription fails`() = runTest {
+        val audioFile = mockk<File>()
+        every { audioRecorder.stop() } returns audioFile
+        every { whisperClient.transcribe(audioFile) } returns null
+        every { audioFile.delete() } returns true
+
+        val result = processor.stopAndTranscribeOnly()
+
+        assertNull(result)
+        verify { audioFile.delete() }
+    }
+
+    @Test
     fun `isRecording delegates to audioRecorder`() {
         every { audioRecorder.isRecording } returns true
         assertTrue(processor.isRecording)
