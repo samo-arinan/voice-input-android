@@ -11,9 +11,12 @@ class AudioRecorder(private val outputDir: File) {
     private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
     private var pcmBuffer: ByteArrayOutputStream? = null
+    private val bufferLock = Any()
+    @Volatile
     var isRecording: Boolean = false
         private set
 
+    @Volatile
     private var lastAmplitude: Int = 0
 
     companion object {
@@ -59,7 +62,9 @@ class AudioRecorder(private val outputDir: File) {
                 while (isRecording) {
                     val bytesRead = recorder.read(buffer, 0, buffer.size)
                     if (bytesRead > 0) {
-                        pcmBuffer?.write(buffer, 0, bytesRead)
+                        synchronized(bufferLock) {
+                            pcmBuffer?.write(buffer, 0, bytesRead)
+                        }
                         lastAmplitude = calculateAmplitude(buffer, bytesRead)
                     }
                 }
@@ -83,7 +88,7 @@ class AudioRecorder(private val outputDir: File) {
         if (!isRecording) return null
         isRecording = false
 
-        recordingThread?.join(1000)
+        recordingThread?.join(2000)
         recordingThread = null
 
         audioRecord?.apply {
@@ -92,8 +97,11 @@ class AudioRecorder(private val outputDir: File) {
         }
         audioRecord = null
 
-        val pcmData = pcmBuffer?.toByteArray() ?: return null
-        pcmBuffer = null
+        val pcmData: ByteArray
+        synchronized(bufferLock) {
+            pcmData = pcmBuffer?.toByteArray() ?: return null
+            pcmBuffer = null
+        }
 
         if (pcmData.isEmpty()) return null
 
