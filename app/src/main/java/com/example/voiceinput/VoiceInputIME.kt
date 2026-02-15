@@ -202,20 +202,11 @@ class VoiceInputIME : InputMethodService() {
         micButtonRing?.hideRing()
     }
 
-    private fun getEditorContext(): String? {
-        val ic = currentInputConnection ?: return null
-        val before = ic.getTextBeforeCursor(200, 0)?.toString() ?: ""
-        val after = ic.getTextAfterCursor(50, 0)?.toString() ?: ""
-        val context = (before + after).trim()
-        return context.ifEmpty { null }
-    }
-
     private fun onMicReleasedForNewInput(proc: VoiceInputProcessor) {
         statusText?.text = "変換中..."
-        val context = getEditorContext()
 
         serviceScope.launch {
-            val chunks = proc.stopAndProcess(context = context)
+            val chunks = proc.stopAndProcess()
             if (chunks != null) {
                 val fullText = chunks.joinToString("") { it.displayText }
                 committedTextLength = fullText.length
@@ -233,10 +224,9 @@ class VoiceInputIME : InputMethodService() {
 
     private fun onMicReleasedForReplacement(proc: VoiceInputProcessor, range: Pair<Int, Int>) {
         statusText?.text = "音声認識中..."
-        val context = getEditorContext()
 
         serviceScope.launch {
-            val rawText = proc.stopAndTranscribeOnly(context = context)
+            val rawText = proc.stopAndTranscribeOnly()
             if (rawText != null) {
                 replaceRange(range.first, range.second, rawText)
                 statusText?.text = "置換完了（テキスト選択→候補）"
