@@ -425,30 +425,33 @@ class VoiceInputIME : InputMethodService() {
             MfccExtractor.extract(audioFile.readBytes())
         }
 
-        val matcher = CommandMatcher(commands, mfccSamples)
-        val result = matcher.match(inputMfcc)
-        if (result == null) {
-            // Show closest distance for tuning
-            val closest = commands.mapNotNull { cmd ->
-                val samples = mfccSamples[cmd.id] ?: return@mapNotNull null
-                if (samples.isEmpty()) return@mapNotNull null
-                val dist = samples.minOf { DtwMatcher.dtwDistance(inputMfcc, it) }
-                cmd.label to dist
-            }.minByOrNull { it.second }
-            if (closest != null) {
-                android.util.Log.d("VoiceCmd", "No match. Closest: ${closest.first} dist=${closest.second} thresh=${commands.first().threshold}")
-            }
+        // Calculate distances for all commands (for diagnostics)
+        val distances = commands.mapNotNull { cmd ->
+            val samples = mfccSamples[cmd.id] ?: return@mapNotNull null
+            if (samples.isEmpty()) return@mapNotNull null
+            val dist = samples.minOf { DtwMatcher.dtwDistance(inputMfcc, it) }
+            Triple(cmd, dist, cmd.threshold)
+        }.sortedBy { it.second }
+
+        if (distances.isEmpty()) return false
+
+        val best = distances.first()
+        val matched = best.second < best.third
+
+        // Always show distance on status for tuning
+        val distStr = "%.1f".format(best.second)
+        if (matched) {
+            audioFile.delete()
+            val ic = currentInputConnection ?: return false
+            CommandExecutor.execute(best.first.text, ic)
+            statusText?.text = "CMD: ${best.first.label} (dist=$distStr)"
+            delay(5000)
+            statusText?.text = "ダブルタップで音声入力"
+            return true
+        } else {
+            statusText?.text = "非CMD: ${best.first.label} (dist=$distStr)"
             return false
         }
-
-        audioFile.delete()
-        val ic = currentInputConnection ?: return false
-        CommandExecutor.execute(result.command.text, ic)
-        android.util.Log.d("VoiceCmd", "Matched: ${result.command.label} dist=${result.distance}")
-        statusText?.text = "コマンド実行: ${result.command.label}"
-        delay(3000)
-        statusText?.text = "ダブルタップで音声入力"
-        return true
     }
 
     // --- Candidate area ---
