@@ -356,23 +356,41 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private fun onMicReleasedForNewInput(proc: VoiceInputProcessor) {
-        statusText?.text = "変換中..."
+        statusText?.text = "処理中..."
 
         serviceScope.launch {
-            val corrections = correctionRepo?.getTopCorrections(20)
-            val chunks = proc.stopAndProcess(corrections = corrections)
-            if (chunks != null) {
-                val fullText = chunks.joinToString("") { it.displayText }
-                committedTextLength = fullText.length
-                currentFullText = fullText
-                currentInputConnection?.commitText(fullText, 1)
-                showCandidateArea(fullText)
-                statusText?.text = "完了（テキスト選択→候補）"
-            } else {
-                statusText?.text = "変換に失敗しました"
+            val audioFile = proc.stopRecording() ?: run {
+                statusText?.text = "録音に失敗しました"
+                return@launch
             }
-            delay(5000)
-            statusText?.text = "ダブルタップで音声入力"
+
+            try {
+                // Try command matching first
+                val matched = tryMatchCommand(audioFile)
+                if (matched) return@launch
+
+                // No command match — Whisper→GPT
+                statusText?.text = "変換中..."
+                val corrections = correctionRepo?.getTopCorrections(20)
+                val chunks = proc.processAudioFile(audioFile, corrections = corrections)
+                if (chunks != null) {
+                    val fullText = chunks.joinToString("") { it.displayText }
+                    committedTextLength = fullText.length
+                    currentFullText = fullText
+                    currentInputConnection?.commitText(fullText, 1)
+                    showCandidateArea(fullText)
+                    statusText?.text = "完了（テキスト選択→候補）"
+                } else {
+                    statusText?.text = "変換に失敗しました"
+                }
+                delay(5000)
+                statusText?.text = "ダブルタップで音声入力"
+            } catch (e: Exception) {
+                audioFile.delete()
+                statusText?.text = "エラーが発生しました"
+                delay(5000)
+                statusText?.text = "ダブルタップで音声入力"
+            }
         }
     }
 
@@ -390,6 +408,31 @@ class VoiceInputIME : InputMethodService() {
             delay(5000)
             statusText?.text = "ダブルタップで音声入力"
         }
+    }
+
+    private suspend fun tryMatchCommand(audioFile: java.io.File): Boolean {
+        val commands = commandRepo?.getCommands()?.filter { it.enabled && it.sampleCount > 0 }
+        if (commands.isNullOrEmpty()) return false
+
+        val mfccSamples = withContext(Dispatchers.IO) {
+            commandRepo?.loadAllMfccs() ?: emptyMap()
+        }
+        if (mfccSamples.isEmpty()) return false
+
+        val inputMfcc = withContext(Dispatchers.IO) {
+            MfccExtractor.extract(audioFile.readBytes())
+        }
+
+        val matcher = CommandMatcher(commands, mfccSamples)
+        val result = matcher.match(inputMfcc) ?: return false
+
+        audioFile.delete()
+        val ic = currentInputConnection ?: return false
+        CommandExecutor.execute(result.command.text, ic)
+        statusText?.text = "コマンド実行: ${result.command.label}"
+        delay(3000)
+        statusText?.text = "ダブルタップで音声入力"
+        return true
     }
 
     // --- Candidate area ---
@@ -551,6 +594,10 @@ class VoiceInputIME : InputMethodService() {
             val targetFile = commandRepo?.getSampleFile(commandId, sampleIndex)
             if (targetFile != null) {
                 wavFile.copyTo(targetFile, overwrite = true)
+                try {
+                    val mfcc = MfccExtractor.extract(targetFile.readBytes())
+                    commandRepo?.saveMfccCache(commandId, sampleIndex, mfcc)
+                } catch (_: Exception) {}
                 wavFile.delete()
                 commandRepo?.updateSampleCount(commandId, sampleIndex + 1)
                 commandLearning?.refreshCommandList()
