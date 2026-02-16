@@ -8,7 +8,7 @@
     <string name="api_key_empty">APIキーを入力してください</string>
     <string name="ime_enabled">IME: 有効</string>
     <string name="ime_disabled">IME: 無効（設定で有効にしてください）</string>
-    <string name="ime_hint">長押し/ダブルタップで音声入力</string>
+    <string name="ime_hint">ダブルタップで音声入力</string>
     <string name="ime_mic_description">マイクボタン</string>
     <string name="ime_switch_keyboard">キーボード切替</string>
     <string name="whisper_model_label">音声認識モデル</string>
