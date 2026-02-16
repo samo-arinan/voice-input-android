@@ -32,6 +32,8 @@ class VoiceInputIME : InputMethodService() {
     private var voiceModeArea: LinearLayout? = null
     private var flickKeyboard: FlickKeyboardView? = null
     private var correctionRepo: CorrectionRepository? = null
+    private var learningModeArea: LinearLayout? = null
+    private var commandRepo: VoiceCommandRepository? = null
     private var composingBuffer = StringBuilder()
 
     override fun onCreateInputView(): View {
@@ -51,6 +53,12 @@ class VoiceInputIME : InputMethodService() {
         // Initialize correction repository
         val correctionsFile = File(filesDir, "corrections.json")
         correctionRepo = CorrectionRepository(correctionsFile)
+
+        learningModeArea = view.findViewById(R.id.learningModeArea)
+
+        val commandsFile = File(filesDir, "voice_commands.json")
+        val samplesDir = File(filesDir, "voice_samples")
+        commandRepo = VoiceCommandRepository(commandsFile, samplesDir)
 
         flickKeyboard?.listener = object : FlickKeyboardListener {
             override fun onCharacterInput(char: String) {
@@ -135,6 +143,9 @@ class VoiceInputIME : InputMethodService() {
                 when (position) {
                     ModeIconPagerAdapter.PAGE_MIC -> {
                         showVoiceModeContent()
+                    }
+                    ModeIconPagerAdapter.PAGE_BRAIN -> {
+                        showLearningModeContent()
                     }
                     ModeIconPagerAdapter.PAGE_KEYBOARD -> {
                         showFlickKeyboardContent()
@@ -380,6 +391,7 @@ class VoiceInputIME : InputMethodService() {
     private fun showFlickKeyboardContent() {
         isFlickMode = true
         voiceModeArea?.visibility = View.GONE
+        learningModeArea?.visibility = View.GONE
         flickKeyboard?.visibility = View.VISIBLE
     }
 
@@ -390,7 +402,15 @@ class VoiceInputIME : InputMethodService() {
             composingBuffer.clear()
         }
         flickKeyboard?.visibility = View.GONE
+        learningModeArea?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
+    }
+
+    private fun showLearningModeContent() {
+        isFlickMode = false
+        voiceModeArea?.visibility = View.GONE
+        flickKeyboard?.visibility = View.GONE
+        learningModeArea?.visibility = View.VISIBLE
     }
 
     private fun showFlickKeyboard() {
