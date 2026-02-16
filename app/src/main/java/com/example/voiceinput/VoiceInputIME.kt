@@ -160,12 +160,24 @@ class VoiceInputIME : InputMethodService() {
                 }
                 return true
             }
+
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                if (e1 == null) return false
+                val dy = e2.y - e1.y
+                val dx = e2.x - e1.x
+                if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30) {
+                    showFlickKeyboard()
+                    return true
+                }
+                return false
+            }
+
+            override fun onDown(e: MotionEvent): Boolean = true
         })
 
-        micIconView?.setOnTouchListener { v, event ->
+        micIconView?.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
-            // Don't consume the event so ViewPager2 can still handle swipes
-            false
+            true
         }
     }
 
