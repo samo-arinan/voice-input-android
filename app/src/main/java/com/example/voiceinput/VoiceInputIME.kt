@@ -411,7 +411,9 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private suspend fun tryMatchCommand(audioFile: java.io.File): Boolean {
-        val commands = commandRepo?.getCommands()?.filter { it.enabled && it.sampleCount > 0 }
+        val commands = commandRepo?.getCommands()
+            ?.filter { it.enabled && it.sampleCount > 0 }
+            ?.map { if (it.threshold < 1f) it.copy(threshold = 30.0f) else it }
         if (commands.isNullOrEmpty()) return false
 
         val mfccSamples = withContext(Dispatchers.IO) {
@@ -424,11 +426,25 @@ class VoiceInputIME : InputMethodService() {
         }
 
         val matcher = CommandMatcher(commands, mfccSamples)
-        val result = matcher.match(inputMfcc) ?: return false
+        val result = matcher.match(inputMfcc)
+        if (result == null) {
+            // Show closest distance for tuning
+            val closest = commands.mapNotNull { cmd ->
+                val samples = mfccSamples[cmd.id] ?: return@mapNotNull null
+                if (samples.isEmpty()) return@mapNotNull null
+                val dist = samples.minOf { DtwMatcher.dtwDistance(inputMfcc, it) }
+                cmd.label to dist
+            }.minByOrNull { it.second }
+            if (closest != null) {
+                android.util.Log.d("VoiceCmd", "No match. Closest: ${closest.first} dist=${closest.second} thresh=${commands.first().threshold}")
+            }
+            return false
+        }
 
         audioFile.delete()
         val ic = currentInputConnection ?: return false
         CommandExecutor.execute(result.command.text, ic)
+        android.util.Log.d("VoiceCmd", "Matched: ${result.command.label} dist=${result.distance}")
         statusText?.text = "コマンド実行: ${result.command.label}"
         delay(3000)
         statusText?.text = "ダブルタップで音声入力"

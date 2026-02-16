@@ -9,7 +9,7 @@ class VoiceCommandTest {
     fun `default values are correct`() {
         val cmd = VoiceCommand(id = "test", label = "test", text = "test\n")
         assertFalse(cmd.auto)
-        assertEquals(0.95f, cmd.threshold)
+        assertEquals(30.0f, cmd.threshold)
         assertEquals(0, cmd.sampleCount)
         assertTrue(cmd.enabled)
     }
