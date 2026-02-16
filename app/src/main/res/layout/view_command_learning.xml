@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- 入力エリア: コマンド名 + 送信文字列 + 追加ボタン -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="4dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/inputDisplay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="コマンドを入力..."
+            android:textSize="14sp"
+            android:background="#F0F0F0"
+            android:padding="8dp"
+            android:minHeight="36dp" />
+
+        <Button
+            android:id="@+id/addButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="＋追加"
+            android:textSize="12sp"
+            android:layout_marginStart="4dp" />
+
+    </LinearLayout>
+
+    <!-- コマンド一覧 (スクロール可能) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="4dp">
+
+        <LinearLayout
+            android:id="@+id/commandList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </ScrollView>
+
+    <!-- 英数字キーボード -->
+    <com.example.voiceinput.AlphanumericKeyboardView
+        android:id="@+id/alphaKeyboard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="2dp" />
+
+</LinearLayout>
