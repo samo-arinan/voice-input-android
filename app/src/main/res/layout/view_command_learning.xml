@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="コマンドを入力..."
+            android:hint="送信文字列を入力..."
             android:textSize="14sp"
             android:background="#F0F0F0"
             android:padding="8dp"

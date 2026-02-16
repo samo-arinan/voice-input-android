@@ -27,6 +27,7 @@ class AlphanumericKeyboardViewTest {
         assertTrue("Missing /", allKeys.contains("/"))
         assertTrue("Missing -", allKeys.contains("-"))
         assertTrue("Missing .", allKeys.contains("."))
+        assertTrue("Missing \\", allKeys.contains("\\"))
         assertTrue("Missing space", allKeys.contains("␣"))
         assertTrue("Missing backspace", allKeys.contains("⌫"))
         assertTrue("Missing newline", allKeys.contains("⏎"))

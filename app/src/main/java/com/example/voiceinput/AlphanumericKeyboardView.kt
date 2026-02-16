@@ -22,19 +22,19 @@ class AlphanumericKeyboardView @JvmOverloads constructor(
     companion object {
         val KEY_ROWS = listOf(
             listOf(
-                KeyDef("a","a"), KeyDef("b","b"), KeyDef("c","c"), KeyDef("d","d"),
-                KeyDef("e","e"), KeyDef("f","f"), KeyDef("g","g"), KeyDef("h","h"),
-                KeyDef("i","i"), KeyDef("j","j")
+                KeyDef("q","q"), KeyDef("w","w"), KeyDef("e","e"), KeyDef("r","r"),
+                KeyDef("t","t"), KeyDef("y","y"), KeyDef("u","u"), KeyDef("i","i"),
+                KeyDef("o","o"), KeyDef("p","p")
             ),
             listOf(
-                KeyDef("k","k"), KeyDef("l","l"), KeyDef("m","m"), KeyDef("n","n"),
-                KeyDef("o","o"), KeyDef("p","p"), KeyDef("q","q"), KeyDef("r","r"),
-                KeyDef("s","s"), KeyDef("t","t")
+                KeyDef("a","a"), KeyDef("s","s"), KeyDef("d","d"), KeyDef("f","f"),
+                KeyDef("g","g"), KeyDef("h","h"), KeyDef("j","j"), KeyDef("k","k"),
+                KeyDef("l","l"), KeyDef("/","/")
             ),
             listOf(
-                KeyDef("u","u"), KeyDef("v","v"), KeyDef("w","w"), KeyDef("x","x"),
-                KeyDef("y","y"), KeyDef("z","z"), KeyDef("/","/"), KeyDef("-","-"),
-                KeyDef("␣"," "), KeyDef(".",".")
+                KeyDef("z","z"), KeyDef("x","x"), KeyDef("c","c"), KeyDef("v","v"),
+                KeyDef("b","b"), KeyDef("n","n"), KeyDef("m","m"), KeyDef("-","-"),
+                KeyDef(".","."), KeyDef("\\","\\")
             ),
             listOf(
                 KeyDef("0","0"), KeyDef("1","1"), KeyDef("2","2"), KeyDef("3","3"),
@@ -42,7 +42,7 @@ class AlphanumericKeyboardView @JvmOverloads constructor(
                 KeyDef("8","8"), KeyDef("9","9")
             ),
             listOf(
-                KeyDef("⏎","\n"), KeyDef("⌫","BACKSPACE")
+                KeyDef("␣"," "), KeyDef("⏎","\n"), KeyDef("⌫","BACKSPACE")
             )
         )
     }

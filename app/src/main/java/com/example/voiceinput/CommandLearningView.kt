@@ -25,10 +25,6 @@ class CommandLearningView @JvmOverloads constructor(
     private var commandList: LinearLayout? = null
     private var addButton: Button? = null
     private var commandRepo: VoiceCommandRepository? = null
-    private var inputMode: InputMode = InputMode.LABEL
-    private var pendingLabel: String? = null
-
-    enum class InputMode { LABEL, TEXT }
 
     init {
         orientation = VERTICAL
@@ -62,37 +58,18 @@ class CommandLearningView @JvmOverloads constructor(
     }
 
     private fun updateInputDisplay() {
-        val hint = when (inputMode) {
-            InputMode.LABEL -> "コマンド名を入力..."
-            InputMode.TEXT -> "送信文字列を入力..."
-        }
         inputDisplay?.text = if (inputBuffer.isEmpty()) "" else inputBuffer.toString()
-        inputDisplay?.hint = hint
+        inputDisplay?.hint = "送信文字列を入力..."
     }
 
     private fun onAddTapped() {
-        val input = inputBuffer.toString().trim()
-        if (input.isEmpty()) return
+        val text = inputBuffer.toString()
+        if (text.isEmpty()) return
 
-        when (inputMode) {
-            InputMode.LABEL -> {
-                pendingLabel = input
-                inputBuffer.clear()
-                inputMode = InputMode.TEXT
-                updateInputDisplay()
-                addButton?.text = "確定"
-            }
-            InputMode.TEXT -> {
-                val label = pendingLabel ?: return
-                commandRepo?.addCommand(label, input)
-                inputBuffer.clear()
-                inputMode = InputMode.LABEL
-                pendingLabel = null
-                updateInputDisplay()
-                addButton?.text = "＋追加"
-                refreshCommandList()
-            }
-        }
+        commandRepo?.addCommand(text, text)
+        inputBuffer.clear()
+        updateInputDisplay()
+        refreshCommandList()
     }
 
     fun refreshCommandList() {
