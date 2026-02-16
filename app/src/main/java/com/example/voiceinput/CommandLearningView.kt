@@ -35,7 +35,7 @@ class CommandLearningView @JvmOverloads constructor(
         private const val COLOR_TEXT_SUB = 0xFF8B949E.toInt()
         private const val COLOR_ACCENT = 0xFF6BA4FF.toInt()
         private const val COLOR_DANGER = 0xFFE05D5D.toInt()
-        private const val MAX_SAMPLES = 3
+        private const val MAX_SAMPLES = 5
     }
 
     var listener: CommandLearningListener? = null

@@ -1,8 +1,10 @@
 package com.example.voiceinput
 
 import android.inputmethodservice.InputMethodService
+import android.os.Build
 import android.view.ActionMode
 import android.view.GestureDetector
+import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.Menu
@@ -10,7 +12,6 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.*
-import androidx.viewpager2.widget.ViewPager2
 import java.io.File
 import kotlinx.coroutines.*
 
@@ -19,8 +20,6 @@ class VoiceInputIME : InputMethodService() {
     private var processor: VoiceInputProcessor? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var statusText: TextView? = null
-    private var modeIconPager: ViewPager2? = null
-    private var micIconView: ImageView? = null
     private var candidateArea: LinearLayout? = null
     private var candidateText: TextView? = null
     private var candidateButton: Button? = null
@@ -39,6 +38,11 @@ class VoiceInputIME : InputMethodService() {
     private var commandRepo: VoiceCommandRepository? = null
     private var composingBuffer = StringBuilder()
     private var contentFrame: FrameLayout? = null
+
+    private var tabVoice: TextView? = null
+    private var tabCommand: TextView? = null
+    private var tabInput: TextView? = null
+    private lateinit var tabBarManager: TabBarManager
 
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
@@ -142,39 +146,37 @@ class VoiceInputIME : InputMethodService() {
         candidateText?.customSelectionActionModeCallback = noopActionModeCallback
         candidateText?.customInsertionActionModeCallback = noopActionModeCallback
 
-        // Setup mode icon ViewPager2
-        modeIconPager = view.findViewById(R.id.modeIconPager)
-        val iconAdapter = ModeIconPagerAdapter()
-        iconAdapter.onPageBound = { position, pageView ->
-            if (position == ModeIconPagerAdapter.PAGE_MIC) {
-                setupMicIcon(pageView)
+        // Setup tab bar
+        tabVoice = view.findViewById(R.id.tabVoice)
+        tabCommand = view.findViewById(R.id.tabCommand)
+        tabInput = view.findViewById(R.id.tabInput)
+
+        tabBarManager = TabBarManager { tab ->
+            when (tab) {
+                TabBarManager.TAB_VOICE -> showVoiceModeContent()
+                TabBarManager.TAB_COMMAND -> showLearningModeContent()
+                TabBarManager.TAB_INPUT -> showFlickKeyboardContent()
             }
         }
-        modeIconPager?.adapter = iconAdapter
-        modeIconPager?.offscreenPageLimit = 1
 
-        modeIconPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                when (position) {
-                    ModeIconPagerAdapter.PAGE_MIC -> {
-                        showVoiceModeContent()
-                    }
-                    ModeIconPagerAdapter.PAGE_BRAIN -> {
-                        showLearningModeContent()
-                    }
-                    ModeIconPagerAdapter.PAGE_KEYBOARD -> {
-                        showFlickKeyboardContent()
-                    }
-                }
-            }
-        })
+        tabVoice?.setOnClickListener { animateTabSelection(TabBarManager.TAB_VOICE) }
+        tabCommand?.setOnClickListener { animateTabSelection(TabBarManager.TAB_COMMAND) }
+        tabInput?.setOnClickListener { animateTabSelection(TabBarManager.TAB_INPUT) }
+
+        // Apply initial tab style (VOICE selected)
+        applyTabStyles()
+        // Force initial selected style on VOICE tab
+        applySelectedStyle(tabVoice)
+        applyUnselectedStyle(tabCommand)
+        applyUnselectedStyle(tabInput)
+
+        // Setup mic double-tap gesture on voiceModeArea
+        setupVoiceAreaGesture()
 
         return view
     }
 
-    private fun setupMicIcon(pageView: View) {
-        micIconView = pageView.findViewById(R.id.micIcon)
-
+    private fun setupVoiceAreaGesture() {
         val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (!isToggleRecording) {
@@ -192,7 +194,7 @@ class VoiceInputIME : InputMethodService() {
                 val dy = e2.y - e1.y
                 val dx = e2.x - e1.x
                 if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30) {
-                    showFlickKeyboard()
+                    animateTabSelection(TabBarManager.TAB_INPUT)
                     return true
                 }
                 return false
@@ -201,10 +203,90 @@ class VoiceInputIME : InputMethodService() {
             override fun onDown(e: MotionEvent): Boolean = true
         })
 
-        micIconView?.setOnTouchListener { _, event ->
+        voiceModeArea?.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             true
         }
+    }
+
+    private fun animateTabSelection(tab: Int) {
+        if (tab == tabBarManager.currentTab) return
+
+        val targetView = getTabView(tab) ?: return
+
+        // Flash dark (20ms)
+        targetView.alpha = 0.5f
+        targetView.postDelayed({ targetView.alpha = 1.0f }, TabBarManager.FLASH_DURATION_MS)
+
+        // Haptic feedback
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            targetView.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        } else {
+            targetView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }
+
+        // Update state
+        tabBarManager.selectTab(tab)
+
+        // Animate all tabs
+        val tabs = listOf(tabVoice, tabCommand, tabInput)
+        tabs.forEachIndexed { index, tv ->
+            if (tv == null) return@forEachIndexed
+            val style = tabBarManager.getTabStyle(index)
+            tv.animate()
+                .translationY(style.translationY * resources.displayMetrics.density)
+                .setDuration(TabBarManager.ANIM_DURATION_MS)
+                .start()
+            tv.elevation = style.elevation * resources.displayMetrics.density
+            tv.setTextColor(style.textColor)
+            if (style.isSelected) {
+                tv.setBackgroundResource(R.drawable.bg_tab_selected)
+            } else {
+                tv.setBackgroundResource(R.drawable.bg_tab_unselected)
+            }
+        }
+    }
+
+    private fun applySelectedStyle(tab: TextView?) {
+        tab ?: return
+        val density = resources.displayMetrics.density
+        tab.translationY = 2f * density
+        tab.elevation = 1f * density
+        tab.setTextColor(0xFFE0E6ED.toInt())
+        tab.setBackgroundResource(R.drawable.bg_tab_selected)
+    }
+
+    private fun applyUnselectedStyle(tab: TextView?) {
+        tab ?: return
+        val density = resources.displayMetrics.density
+        tab.translationY = 0f
+        tab.elevation = 6f * density
+        tab.setTextColor(0xFF8B949E.toInt())
+        tab.setBackgroundResource(R.drawable.bg_tab_unselected)
+    }
+
+    private fun applyTabStyles() {
+        val tabs = listOf(tabVoice, tabCommand, tabInput)
+        tabs.forEachIndexed { index, tv ->
+            if (tv == null) return@forEachIndexed
+            val style = tabBarManager.getTabStyle(index)
+            val density = resources.displayMetrics.density
+            tv.translationY = style.translationY * density
+            tv.elevation = style.elevation * density
+            tv.setTextColor(style.textColor)
+            if (style.isSelected) {
+                tv.setBackgroundResource(R.drawable.bg_tab_selected)
+            } else {
+                tv.setBackgroundResource(R.drawable.bg_tab_unselected)
+            }
+        }
+    }
+
+    private fun getTabView(tab: Int): TextView? = when (tab) {
+        TabBarManager.TAB_VOICE -> tabVoice
+        TabBarManager.TAB_COMMAND -> tabCommand
+        TabBarManager.TAB_INPUT -> tabInput
+        else -> null
     }
 
     private fun refreshProcessor() {
@@ -253,7 +335,6 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "録音中..."
                 hideCandidateArea()
             }
-            micIconView?.alpha = 0.5f
         } else {
             replacementRange = null
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
@@ -264,7 +345,6 @@ class VoiceInputIME : InputMethodService() {
         val proc = processor ?: return
         if (!proc.isRecording) return
 
-        micIconView?.alpha = 1.0f
         val range = replacementRange
         replacementRange = null
 
@@ -433,11 +513,11 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private fun showFlickKeyboard() {
-        modeIconPager?.setCurrentItem(ModeIconPagerAdapter.PAGE_KEYBOARD, true)
+        animateTabSelection(TabBarManager.TAB_INPUT)
     }
 
     private fun showVoiceMode() {
-        modeIconPager?.setCurrentItem(ModeIconPagerAdapter.PAGE_MIC, true)
+        animateTabSelection(TabBarManager.TAB_VOICE)
     }
 
     private fun showKanjiCandidatePopup(candidates: List<String>, hiragana: String) {
@@ -463,7 +543,7 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private fun recordCommandSample(commandId: String, sampleIndex: Int) {
-        if (sampleIndex >= 3) return // max 3 samples
+        if (sampleIndex >= 5) return // max 5 samples
 
         if (sampleRecorder?.isRecording == true) {
             // Stop recording

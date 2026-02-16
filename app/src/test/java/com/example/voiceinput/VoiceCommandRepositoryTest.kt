@@ -117,6 +117,19 @@ class VoiceCommandRepositoryTest {
     }
 
     @Test
+    fun `can record up to 5 samples`() {
+        val cmd = repo.addCommand("exit", "/exit\n")
+        for (i in 0 until 5) {
+            repo.getSampleFile(cmd.id, i).writeText("fake$i")
+            repo.updateSampleCount(cmd.id, i + 1)
+        }
+        assertEquals(5, repo.getCommands().first().sampleCount)
+        for (i in 0 until 5) {
+            assertTrue(repo.getSampleFile(cmd.id, i).exists())
+        }
+    }
+
+    @Test
     fun `deleteCommand also removes mfcc cache files`() {
         val cmd = repo.addCommand("exit", "/exit\n")
         repo.saveMfccCache(cmd.id, 0, arrayOf(floatArrayOf(1f)))
