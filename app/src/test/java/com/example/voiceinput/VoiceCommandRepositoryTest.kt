@@ -78,4 +78,49 @@ class VoiceCommandRepositoryTest {
         assertEquals("exit_2.wav", file.name)
         assertEquals(samplesDir, file.parentFile)
     }
+
+    @Test
+    fun `getMfccCacheFile returns correct path`() {
+        val file = repo.getMfccCacheFile("exit", 1)
+        assertEquals("exit_1.mfcc", file.name)
+        assertEquals(samplesDir, file.parentFile)
+    }
+
+    @Test
+    fun `saveMfccCache and loadMfccCache roundtrip`() {
+        val mfcc = arrayOf(floatArrayOf(1.5f, 2.5f), floatArrayOf(3.5f, 4.5f))
+        repo.saveMfccCache("exit", 0, mfcc)
+        val loaded = repo.loadMfccCache("exit", 0)
+        assertNotNull(loaded)
+        assertEquals(2, loaded!!.size)
+        assertEquals(1.5f, loaded[0][0], 0.001f)
+        assertEquals(4.5f, loaded[1][1], 0.001f)
+    }
+
+    @Test
+    fun `loadMfccCache returns null when no cache`() {
+        val loaded = repo.loadMfccCache("nonexistent", 0)
+        assertNull(loaded)
+    }
+
+    @Test
+    fun `loadAllMfccs loads cached MFCCs for all samples`() {
+        val cmd = repo.addCommand("exit", "/exit\n")
+        repo.updateSampleCount(cmd.id, 2)
+        val mfcc0 = arrayOf(floatArrayOf(1f, 2f))
+        val mfcc1 = arrayOf(floatArrayOf(3f, 4f))
+        repo.saveMfccCache(cmd.id, 0, mfcc0)
+        repo.saveMfccCache(cmd.id, 1, mfcc1)
+        val all = repo.loadAllMfccs()
+        assertEquals(1, all.size)
+        assertEquals(2, all[cmd.id]!!.size)
+    }
+
+    @Test
+    fun `deleteCommand also removes mfcc cache files`() {
+        val cmd = repo.addCommand("exit", "/exit\n")
+        repo.saveMfccCache(cmd.id, 0, arrayOf(floatArrayOf(1f)))
+        repo.deleteCommand(cmd.id)
+        assertNull(repo.loadMfccCache(cmd.id, 0))
+    }
 }
