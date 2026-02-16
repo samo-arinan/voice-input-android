@@ -9,8 +9,9 @@ class ModeIconPagerAdapter : RecyclerView.Adapter<ModeIconPagerAdapter.IconViewH
 
     companion object {
         const val PAGE_MIC = 0
-        const val PAGE_KEYBOARD = 1
-        const val PAGE_COUNT = 2
+        const val PAGE_BRAIN = 1
+        const val PAGE_KEYBOARD = 2
+        const val PAGE_COUNT = 3
     }
 
     var onPageBound: ((position: Int, view: View) -> Unit)? = null
@@ -24,6 +25,7 @@ class ModeIconPagerAdapter : RecyclerView.Adapter<ModeIconPagerAdapter.IconViewH
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): IconViewHolder {
         val layoutRes = when (viewType) {
             PAGE_MIC -> R.layout.icon_page_mic
+            PAGE_BRAIN -> R.layout.icon_page_brain
             PAGE_KEYBOARD -> R.layout.icon_page_keyboard
             else -> throw IllegalArgumentException("Unknown page: $viewType")
         }
