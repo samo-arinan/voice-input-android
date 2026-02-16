@@ -32,7 +32,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("androidx.viewpager2:viewpager2:1.1.0")
+
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.13.13")
