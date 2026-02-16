@@ -77,23 +77,11 @@
                 android:visibility="gone" />
 
             <!-- 学習モード（デフォルト非表示） -->
-            <LinearLayout
-                android:id="@+id/learningModeArea"
+            <com.example.voiceinput.CommandLearningView
+                android:id="@+id/commandLearning"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:padding="4dp">
-
-                <TextView
-                    android:id="@+id/learningStatusText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="コマンド学習モード"
-                    android:textSize="12sp"
-                    android:padding="4dp" />
-
-            </LinearLayout>
+                android:visibility="gone" />
 
         </FrameLayout>
 

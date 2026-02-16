@@ -32,7 +32,10 @@ class VoiceInputIME : InputMethodService() {
     private var voiceModeArea: LinearLayout? = null
     private var flickKeyboard: FlickKeyboardView? = null
     private var correctionRepo: CorrectionRepository? = null
-    private var learningModeArea: LinearLayout? = null
+    private var commandLearning: CommandLearningView? = null
+    private var sampleRecorder: AudioRecorder? = null
+    private var recordingCommandId: String? = null
+    private var recordingSampleIndex: Int = 0
     private var commandRepo: VoiceCommandRepository? = null
     private var composingBuffer = StringBuilder()
 
@@ -54,11 +57,21 @@ class VoiceInputIME : InputMethodService() {
         val correctionsFile = File(filesDir, "corrections.json")
         correctionRepo = CorrectionRepository(correctionsFile)
 
-        learningModeArea = view.findViewById(R.id.learningModeArea)
-
         val commandsFile = File(filesDir, "voice_commands.json")
         val samplesDir = File(filesDir, "voice_samples")
         commandRepo = VoiceCommandRepository(commandsFile, samplesDir)
+
+        commandLearning = view.findViewById(R.id.commandLearning)
+        commandLearning?.setRepository(commandRepo!!)
+        commandLearning?.listener = object : CommandLearningListener {
+            override fun onRecordSample(commandId: String, sampleIndex: Int) {
+                recordCommandSample(commandId, sampleIndex)
+            }
+            override fun onDeleteCommand(commandId: String) {
+                commandRepo?.deleteCommand(commandId)
+                commandLearning?.refreshCommandList()
+            }
+        }
 
         flickKeyboard?.listener = object : FlickKeyboardListener {
             override fun onCharacterInput(char: String) {
@@ -391,7 +404,7 @@ class VoiceInputIME : InputMethodService() {
     private fun showFlickKeyboardContent() {
         isFlickMode = true
         voiceModeArea?.visibility = View.GONE
-        learningModeArea?.visibility = View.GONE
+        commandLearning?.visibility = View.GONE
         flickKeyboard?.visibility = View.VISIBLE
     }
 
@@ -402,7 +415,7 @@ class VoiceInputIME : InputMethodService() {
             composingBuffer.clear()
         }
         flickKeyboard?.visibility = View.GONE
-        learningModeArea?.visibility = View.GONE
+        commandLearning?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
     }
 
@@ -410,7 +423,8 @@ class VoiceInputIME : InputMethodService() {
         isFlickMode = false
         voiceModeArea?.visibility = View.GONE
         flickKeyboard?.visibility = View.GONE
-        learningModeArea?.visibility = View.VISIBLE
+        commandLearning?.visibility = View.VISIBLE
+        commandLearning?.refreshCommandList()
     }
 
     private fun showFlickKeyboard() {
@@ -441,6 +455,39 @@ class VoiceInputIME : InputMethodService() {
             true
         }
         popup.show()
+    }
+
+    private fun recordCommandSample(commandId: String, sampleIndex: Int) {
+        if (sampleIndex >= 3) return // max 3 samples
+
+        if (sampleRecorder?.isRecording == true) {
+            // Stop recording
+            val wavFile = sampleRecorder?.stop() ?: return
+            val targetFile = commandRepo?.getSampleFile(commandId, sampleIndex)
+            if (targetFile != null) {
+                wavFile.copyTo(targetFile, overwrite = true)
+                wavFile.delete()
+                commandRepo?.updateSampleCount(commandId, sampleIndex + 1)
+                commandLearning?.refreshCommandList()
+            }
+            sampleRecorder = null
+            recordingCommandId = null
+            return
+        }
+
+        // Start recording (auto-stop after 2 seconds)
+        sampleRecorder = AudioRecorder(cacheDir)
+        recordingCommandId = commandId
+        recordingSampleIndex = sampleIndex
+        val started = sampleRecorder?.start() ?: false
+        if (started) {
+            serviceScope.launch {
+                delay(2000)
+                if (sampleRecorder?.isRecording == true) {
+                    recordCommandSample(commandId, sampleIndex)
+                }
+            }
+        }
     }
 
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
