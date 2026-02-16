@@ -44,4 +44,44 @@ class MfccExtractorTest {
         assertEquals(3, frames.size)
         assertEquals(400, frames[0].size)
     }
+
+    @Test
+    fun `hammingWindow applies correct windowing`() {
+        val frame = FloatArray(4) { 1.0f }
+        val windowed = MfccExtractor.applyHammingWindow(frame)
+        assertEquals(0.08f, windowed[0], 0.01f)
+        assertEquals(0.77f, windowed[1], 0.01f)
+    }
+
+    @Test
+    fun `fft produces power spectrum of correct size`() {
+        val frame = FloatArray(512) { 0f }
+        frame[0] = 1.0f
+        val power = MfccExtractor.powerSpectrum(frame, 512)
+        assertEquals(257, power.size)
+        val expected = 1.0f / 512f
+        assertEquals(expected, power[0], 0.001f)
+        assertEquals(expected, power[1], 0.001f)
+    }
+
+    @Test
+    fun `extract produces correct dimensions`() {
+        val samples = ShortArray(16000) { 0 }
+        val wav = createWavBytes(samples)
+        val mfcc = MfccExtractor.extract(wav)
+        assertEquals(98, mfcc.size)
+        assertEquals(13, mfcc[0].size)
+    }
+
+    @Test
+    fun `extract of sine wave produces non-zero MFCCs`() {
+        val samples = ShortArray(16000) { i ->
+            (16000 * kotlin.math.sin(2.0 * Math.PI * 440.0 * i / 16000.0)).toInt().toShort()
+        }
+        val wav = createWavBytes(samples)
+        val mfcc = MfccExtractor.extract(wav)
+        val midFrame = mfcc[mfcc.size / 2]
+        val energy = midFrame.map { it * it }.sum()
+        assertTrue("MFCC energy should be non-trivial", energy > 1.0f)
+    }
 }
