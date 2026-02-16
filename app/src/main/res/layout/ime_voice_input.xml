@@ -78,16 +78,13 @@
 
         </FrameLayout>
 
-        <!-- 右側: 常に表示されるモード切替アイコン -->
-        <ImageView
-            android:id="@+id/modeIcon"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_mic"
-            android:background="@drawable/mic_button_background"
-            android:padding="14dp"
-            android:layout_margin="8dp"
-            android:contentDescription="@string/ime_mic_description" />
+        <!-- 右側: 常に表示されるモード切替アイコン（ViewPager2） -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/modeIconPager"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:orientation="vertical"
+            android:layout_margin="0dp" />
 
     </LinearLayout>
 

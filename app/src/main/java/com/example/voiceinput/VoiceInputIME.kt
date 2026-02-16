@@ -1,8 +1,6 @@
 package com.example.voiceinput
 
 import android.inputmethodservice.InputMethodService
-import android.os.Handler
-import android.os.Looper
 import android.view.ActionMode
 import android.view.GestureDetector
 import android.view.KeyEvent
@@ -12,6 +10,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.widget.*
+import androidx.viewpager2.widget.ViewPager2
 import java.io.File
 import kotlinx.coroutines.*
 
@@ -20,7 +19,8 @@ class VoiceInputIME : InputMethodService() {
     private var processor: VoiceInputProcessor? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var statusText: TextView? = null
-    private var modeIcon: ImageView? = null
+    private var modeIconPager: ViewPager2? = null
+    private var micIconView: ImageView? = null
     private var candidateArea: LinearLayout? = null
     private var candidateText: TextView? = null
     private var candidateButton: Button? = null
@@ -28,17 +28,11 @@ class VoiceInputIME : InputMethodService() {
     private var currentFullText: String? = null
     private var replacementRange: Pair<Int, Int>? = null
     private var isToggleRecording = false
-    private var isHoldRecording = false
     private var isFlickMode = false
-    private var longPressRunnable: Runnable? = null
-    private val handler = Handler(Looper.getMainLooper())
     private var voiceModeArea: LinearLayout? = null
     private var flickKeyboard: FlickKeyboardView? = null
     private var correctionRepo: CorrectionRepository? = null
     private var composingBuffer = StringBuilder()
-    private companion object {
-        const val LONG_PRESS_DELAY = 500L
-    }
 
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
@@ -46,11 +40,9 @@ class VoiceInputIME : InputMethodService() {
         refreshProcessor()
 
         statusText = view.findViewById(R.id.imeStatusText)
-        modeIcon = view.findViewById(R.id.modeIcon)
         candidateArea = view.findViewById(R.id.candidateArea)
         candidateText = view.findViewById(R.id.candidateText)
         candidateButton = view.findViewById(R.id.candidateButton)
-
         candidateButton?.setOnClickListener { onCandidateButtonTap() }
 
         voiceModeArea = view.findViewById(R.id.voiceModeArea)
@@ -94,7 +86,6 @@ class VoiceInputIME : InputMethodService() {
                     val apiKey = prefsManager.getApiKey() ?: return@launch
                     val proc = processor
                     val converter = if (proc != null) {
-                        // Reuse OkHttpClient from processor's GptConverter
                         proc.gptConverter
                     } else {
                         GptConverter(apiKey)
@@ -128,71 +119,54 @@ class VoiceInputIME : InputMethodService() {
         candidateText?.customSelectionActionModeCallback = noopActionModeCallback
         candidateText?.customInsertionActionModeCallback = noopActionModeCallback
 
+        // Setup mode icon ViewPager2
+        modeIconPager = view.findViewById(R.id.modeIconPager)
+        val iconAdapter = ModeIconPagerAdapter()
+        iconAdapter.onPageBound = { position, pageView ->
+            if (position == ModeIconPagerAdapter.PAGE_MIC) {
+                setupMicIcon(pageView)
+            }
+        }
+        modeIconPager?.adapter = iconAdapter
+        modeIconPager?.offscreenPageLimit = 1
+
+        modeIconPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                when (position) {
+                    ModeIconPagerAdapter.PAGE_MIC -> {
+                        showVoiceModeContent()
+                    }
+                    ModeIconPagerAdapter.PAGE_KEYBOARD -> {
+                        showFlickKeyboardContent()
+                    }
+                }
+            }
+        })
+
+        return view
+    }
+
+    private fun setupMicIcon(pageView: View) {
+        micIconView = pageView.findViewById(R.id.micIcon)
+
         val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
-                if (isFlickMode) return false
-                longPressRunnable?.let { handler.removeCallbacks(it) }
-                longPressRunnable = null
-                if (!isToggleRecording && !isHoldRecording) {
+                if (!isToggleRecording) {
                     isToggleRecording = true
                     onMicPressed()
-                }
-                return true
-            }
-
-            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                if (isFlickMode) return false
-                if (isToggleRecording) {
+                } else {
                     isToggleRecording = false
                     onMicReleased()
                 }
                 return true
             }
-
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (e1 == null) return false
-                val dy = e2.y - e1.y
-                val dx = e2.x - e1.x
-                // Only trigger on vertical fling (dy > dx) with minimum distance
-                if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30) {
-                    if (isFlickMode) {
-                        showVoiceMode()
-                    } else {
-                        showFlickKeyboard()
-                    }
-                    return true
-                }
-                return false
-            }
         })
 
-        modeIcon?.setOnTouchListener { _, event ->
+        micIconView?.setOnTouchListener { v, event ->
             gestureDetector.onTouchEvent(event)
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    if (!isFlickMode && !isToggleRecording) {
-                        longPressRunnable = Runnable {
-                            isHoldRecording = true
-                            onMicPressed()
-                        }
-                        handler.postDelayed(longPressRunnable!!, LONG_PRESS_DELAY)
-                    }
-                    true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    longPressRunnable?.let { handler.removeCallbacks(it) }
-                    longPressRunnable = null
-                    if (isHoldRecording) {
-                        isHoldRecording = false
-                        onMicReleased()
-                    }
-                    true
-                }
-                else -> false
-            }
+            // Don't consume the event so ViewPager2 can still handle swipes
+            false
         }
-
-        return view
     }
 
     private fun refreshProcessor() {
@@ -241,7 +215,7 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "録音中..."
                 hideCandidateArea()
             }
-            modeIcon?.alpha = 0.5f
+            micIconView?.alpha = 0.5f
         } else {
             replacementRange = null
             Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
@@ -252,7 +226,7 @@ class VoiceInputIME : InputMethodService() {
         val proc = processor ?: return
         if (!proc.isRecording) return
 
-        modeIcon?.alpha = 1.0f
+        micIconView?.alpha = 1.0f
         val range = replacementRange
         replacementRange = null
 
@@ -280,7 +254,7 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "変換に失敗しました"
             }
             delay(5000)
-            statusText?.text = "長押し/ダブルタップで音声入力"
+            statusText?.text = "ダブルタップで音声入力"
         }
     }
 
@@ -296,7 +270,7 @@ class VoiceInputIME : InputMethodService() {
                 statusText?.text = "音声認識に失敗しました"
             }
             delay(5000)
-            statusText?.text = "長押し/ダブルタップで音声入力"
+            statusText?.text = "ダブルタップで音声入力"
         }
     }
 
@@ -345,7 +319,7 @@ class VoiceInputIME : InputMethodService() {
             } else {
                 Toast.makeText(this@VoiceInputIME, "候補を取得できませんでした", Toast.LENGTH_SHORT).show()
             }
-            statusText?.text = "長押し/ダブルタップで音声入力"
+            statusText?.text = "ダブルタップで音声入力"
         }
     }
 
@@ -391,14 +365,13 @@ class VoiceInputIME : InputMethodService() {
         }
     }
 
-    private fun showFlickKeyboard() {
+    private fun showFlickKeyboardContent() {
         isFlickMode = true
         voiceModeArea?.visibility = View.GONE
         flickKeyboard?.visibility = View.VISIBLE
-        modeIcon?.setImageResource(R.drawable.ic_keyboard)
     }
 
-    private fun showVoiceMode() {
+    private fun showVoiceModeContent() {
         isFlickMode = false
         if (composingBuffer.isNotEmpty()) {
             currentInputConnection?.finishComposingText()
@@ -406,7 +379,14 @@ class VoiceInputIME : InputMethodService() {
         }
         flickKeyboard?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
-        modeIcon?.setImageResource(R.drawable.ic_mic)
+    }
+
+    private fun showFlickKeyboard() {
+        modeIconPager?.setCurrentItem(ModeIconPagerAdapter.PAGE_KEYBOARD, true)
+    }
+
+    private fun showVoiceMode() {
+        modeIconPager?.setCurrentItem(ModeIconPagerAdapter.PAGE_MIC, true)
     }
 
     private fun showKanjiCandidatePopup(candidates: List<String>, hiragana: String) {
@@ -429,11 +409,6 @@ class VoiceInputIME : InputMethodService() {
             true
         }
         popup.show()
-    }
-
-    private fun hideCandidateAreaDelayed() {
-        candidateArea?.visibility = View.GONE
-        currentFullText = null
     }
 
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
