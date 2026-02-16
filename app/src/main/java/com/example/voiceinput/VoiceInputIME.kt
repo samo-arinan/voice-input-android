@@ -487,6 +487,10 @@ class VoiceInputIME : InputMethodService() {
                     recordCommandSample(commandId, sampleIndex)
                 }
             }
+        } else {
+            Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
+            sampleRecorder = null
+            recordingCommandId = null
         }
     }
 

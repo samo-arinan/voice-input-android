@@ -25,6 +25,8 @@ class AlphanumericKeyboardViewTest {
     fun `KEY_ROWS contains special keys`() {
         val allKeys = AlphanumericKeyboardView.KEY_ROWS.flatten().map { it.display }
         assertTrue("Missing /", allKeys.contains("/"))
+        assertTrue("Missing -", allKeys.contains("-"))
+        assertTrue("Missing .", allKeys.contains("."))
         assertTrue("Missing space", allKeys.contains("␣"))
         assertTrue("Missing backspace", allKeys.contains("⌫"))
         assertTrue("Missing newline", allKeys.contains("⏎"))
