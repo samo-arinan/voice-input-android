@@ -38,6 +38,7 @@ class VoiceInputIME : InputMethodService() {
     private var recordingSampleIndex: Int = 0
     private var commandRepo: VoiceCommandRepository? = null
     private var composingBuffer = StringBuilder()
+    private var contentFrame: FrameLayout? = null
 
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
@@ -52,6 +53,7 @@ class VoiceInputIME : InputMethodService() {
 
         voiceModeArea = view.findViewById(R.id.voiceModeArea)
         flickKeyboard = view.findViewById(R.id.flickKeyboard)
+        contentFrame = view.findViewById(R.id.contentFrame)
 
         // Initialize correction repository
         val correctionsFile = File(filesDir, "corrections.json")
@@ -406,6 +408,7 @@ class VoiceInputIME : InputMethodService() {
         voiceModeArea?.visibility = View.GONE
         commandLearning?.visibility = View.GONE
         flickKeyboard?.visibility = View.VISIBLE
+        contentFrame?.setBackgroundColor(0)
     }
 
     private fun showVoiceModeContent() {
@@ -417,6 +420,7 @@ class VoiceInputIME : InputMethodService() {
         flickKeyboard?.visibility = View.GONE
         commandLearning?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
+        contentFrame?.setBackgroundColor(0)
     }
 
     private fun showLearningModeContent() {
@@ -425,6 +429,7 @@ class VoiceInputIME : InputMethodService() {
         flickKeyboard?.visibility = View.GONE
         commandLearning?.visibility = View.VISIBLE
         commandLearning?.refreshCommandList()
+        contentFrame?.setBackgroundColor(0xFF111418.toInt())
     }
 
     private fun showFlickKeyboard() {

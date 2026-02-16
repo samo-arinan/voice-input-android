@@ -1,7 +1,9 @@
 package com.example.voiceinput
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.widget.Button
 import android.widget.GridLayout
 
@@ -20,6 +22,10 @@ class AlphanumericKeyboardView @JvmOverloads constructor(
     var listener: AlphanumericKeyboardListener? = null
 
     companion object {
+        private const val COLOR_TEXT_MAIN = 0xFFE6EDF3.toInt()
+        private const val COLOR_ACCENT = 0xFF6BA4FF.toInt()
+        private val SPECIAL_KEYS = setOf("␣", "⏎", "⌫")
+
         val KEY_ROWS = listOf(
             listOf(
                 KeyDef("q","q"), KeyDef("w","w"), KeyDef("e","e"), KeyDef("r","r"),
@@ -66,9 +72,17 @@ class AlphanumericKeyboardView @JvmOverloads constructor(
     }
 
     private fun addKeyButton(key: KeyDef, span: Int) {
+        val dp2 = (2 * context.resources.displayMetrics.density).toInt()
+
         val btn = Button(context).apply {
             text = key.display
-            textSize = 12f
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTextColor(if (key.display in SPECIAL_KEYS) COLOR_ACCENT else COLOR_TEXT_MAIN)
+            setBackgroundResource(R.drawable.bg_key_button)
+            isAllCaps = false
+            minHeight = 0
+            minimumHeight = 0
+            setPadding(0, dp2, 0, dp2)
             setOnClickListener {
                 if (key.value == "BACKSPACE") {
                     listener?.onBackspace()
@@ -80,6 +94,7 @@ class AlphanumericKeyboardView @JvmOverloads constructor(
         val params = LayoutParams(spec(UNDEFINED, span.toFloat()), spec(UNDEFINED, 1f)).apply {
             width = 0
             height = LayoutParams.WRAP_CONTENT
+            setMargins(dp2, dp2, dp2, dp2)
         }
         addView(btn, params)
     }

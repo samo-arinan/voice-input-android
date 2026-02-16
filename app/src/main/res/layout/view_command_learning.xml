@@ -1,59 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="wrap_content">
 
-    <!-- 入力エリア: コマンド名 + 送信文字列 + 追加ボタン -->
+    <!-- メインコンテンツ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="4dp"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:background="#111418">
 
+        <!-- COMMAND MATRIX タイトル -->
         <TextView
-            android:id="@+id/inputDisplay"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="送信文字列を入力..."
-            android:textSize="14sp"
-            android:background="#F0F0F0"
-            android:padding="8dp"
-            android:minHeight="36dp" />
+            android:text="COMMAND MATRIX"
+            android:textColor="#8B949E"
+            android:textSize="11sp"
+            android:letterSpacing="0.3"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="6dp" />
 
-        <Button
-            android:id="@+id/addButton"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="＋追加"
-            android:textSize="12sp"
-            android:layout_marginStart="4dp" />
+        <!-- 区切り線 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#2B323C" />
+
+        <!-- 入力エリア -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="6dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/inputDisplay"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="enter command text..."
+                android:textColorHint="#8B949E"
+                android:textColor="#E6EDF3"
+                android:textSize="14sp"
+                android:background="@drawable/bg_input_field"
+                android:padding="10dp"
+                android:minHeight="38dp" />
+
+            <TextView
+                android:id="@+id/addButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="+ ADD"
+                android:textColor="#6BA4FF"
+                android:textSize="11sp"
+                android:letterSpacing="0.15"
+                android:gravity="center"
+                android:background="@drawable/btn_outline_accent"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- コマンド一覧 (スクロール可能) -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/commandList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+        </ScrollView>
 
     </LinearLayout>
 
-    <!-- コマンド一覧 (スクロール可能) -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginBottom="4dp">
-
-        <LinearLayout
-            android:id="@+id/commandList"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
-    </ScrollView>
-
-    <!-- 英数字キーボード -->
-    <com.example.voiceinput.AlphanumericKeyboardView
-        android:id="@+id/alphaKeyboard"
+    <!-- キーボードエリア (デフォルト非表示, スライドイン) -->
+    <LinearLayout
+        android:id="@+id/keyboardContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="2dp" />
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:visibility="gone">
 
-</LinearLayout>
+        <!-- scrim背景 -->
+        <View
+            android:id="@+id/keyboardScrim"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_keyboard_scrim" />
+
+        <!-- キーボード -->
+        <com.example.voiceinput.AlphanumericKeyboardView
+            android:id="@+id/alphaKeyboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#111418"
+            android:padding="2dp" />
+
+    </LinearLayout>
+
+</FrameLayout>
