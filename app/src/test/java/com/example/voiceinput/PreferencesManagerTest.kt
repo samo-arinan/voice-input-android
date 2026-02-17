@@ -20,6 +20,8 @@ class PreferencesManagerTest {
         editor = mockk(relaxed = true)
         every { sharedPreferences.edit() } returns editor
         every { editor.putString(any(), any()) } returns editor
+        every { editor.putInt(any(), any()) } returns editor
+        every { editor.putBoolean(any(), any()) } returns editor
         manager = PreferencesManager(sharedPreferences)
     }
 
@@ -71,5 +73,70 @@ class PreferencesManagerTest {
     fun `getWhisperModel returns default when not set`() {
         every { sharedPreferences.getString("whisper_model", "gpt-4o-transcribe") } returns "gpt-4o-transcribe"
         assertEquals("gpt-4o-transcribe", manager.getWhisperModel())
+    }
+
+    // SSH config tests
+
+    @Test
+    fun `saveSshConfig stores all SSH fields`() {
+        every { sharedPreferences.getString("ssh_host", null) } returns "192.168.1.100"
+        every { sharedPreferences.getInt("ssh_port", 22) } returns 22
+        every { sharedPreferences.getString("ssh_username", null) } returns "user"
+        every { sharedPreferences.getString("ssh_private_key", null) } returns "-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----"
+        every { sharedPreferences.getBoolean("ssh_context_enabled", false) } returns true
+
+        manager.saveSshHost("192.168.1.100")
+        manager.saveSshPort(22)
+        manager.saveSshUsername("user")
+        manager.saveSshPrivateKey("-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----")
+        manager.saveSshContextEnabled(true)
+
+        assertEquals("192.168.1.100", manager.getSshHost())
+        assertEquals(22, manager.getSshPort())
+        assertEquals("user", manager.getSshUsername())
+        assertEquals("-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----", manager.getSshPrivateKey())
+        assertTrue(manager.isSshContextEnabled())
+    }
+
+    @Test
+    fun `SSH defaults are correct`() {
+        every { sharedPreferences.getString("ssh_host", null) } returns null
+        every { sharedPreferences.getInt("ssh_port", 22) } returns 22
+        every { sharedPreferences.getString("ssh_username", null) } returns null
+        every { sharedPreferences.getString("ssh_private_key", null) } returns null
+        every { sharedPreferences.getBoolean("ssh_context_enabled", false) } returns false
+
+        assertNull(manager.getSshHost())
+        assertEquals(22, manager.getSshPort())
+        assertNull(manager.getSshUsername())
+        assertNull(manager.getSshPrivateKey())
+        assertFalse(manager.isSshContextEnabled())
+    }
+
+    @Test
+    fun `isSshConfigured returns true when all fields set`() {
+        every { sharedPreferences.getBoolean("ssh_context_enabled", false) } returns true
+        every { sharedPreferences.getString("ssh_host", null) } returns "host"
+        every { sharedPreferences.getString("ssh_username", null) } returns "user"
+        every { sharedPreferences.getString("ssh_private_key", null) } returns "key"
+
+        manager.saveSshHost("host")
+        manager.saveSshUsername("user")
+        manager.saveSshPrivateKey("key")
+        manager.saveSshContextEnabled(true)
+        assertTrue(manager.isSshConfigured())
+    }
+
+    @Test
+    fun `isSshConfigured returns false when host missing`() {
+        every { sharedPreferences.getBoolean("ssh_context_enabled", false) } returns true
+        every { sharedPreferences.getString("ssh_host", null) } returns null
+        every { sharedPreferences.getString("ssh_username", null) } returns "user"
+        every { sharedPreferences.getString("ssh_private_key", null) } returns "key"
+
+        manager.saveSshUsername("user")
+        manager.saveSshPrivateKey("key")
+        manager.saveSshContextEnabled(true)
+        assertFalse(manager.isSshConfigured())
     }
 }
