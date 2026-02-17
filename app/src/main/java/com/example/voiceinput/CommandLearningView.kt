@@ -3,6 +3,7 @@ package com.example.voiceinput
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
+import android.media.MediaPlayer
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -51,6 +52,8 @@ class CommandLearningView @JvmOverloads constructor(
     private var commandRepo: VoiceCommandRepository? = null
     private var isKeyboardVisible = false
     private var expandedCommandId: String? = null
+    private var mediaPlayer: MediaPlayer? = null
+    private var playingCommandId: String? = null
 
     init {
         val view = LayoutInflater.from(context).inflate(R.layout.view_command_learning, this, true)
@@ -325,7 +328,54 @@ class CommandLearningView @JvmOverloads constructor(
     }
 
     private fun onPlayTapped(cmd: VoiceCommand) {
-        // Will be implemented in Task 4
+        if (playingCommandId == cmd.id) {
+            stopPlayback()
+            return
+        }
+
+        stopPlayback()
+
+        val repo = commandRepo ?: return
+        val sampleIndex = latestSampleIndex(cmd.sampleCount)
+        if (sampleIndex < 0) return
+        val file = repo.getSampleFile(cmd.id, sampleIndex)
+        if (!file.exists()) return
+
+        try {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(file.absolutePath)
+                prepare()
+                start()
+                setOnCompletionListener { stopPlayback() }
+            }
+            playingCommandId = cmd.id
+            updatePlayButtonState(cmd.id, playing = true)
+        } catch (e: Exception) {
+            stopPlayback()
+        }
+    }
+
+    private fun stopPlayback() {
+        val prevId = playingCommandId
+        mediaPlayer?.release()
+        mediaPlayer = null
+        playingCommandId = null
+        if (prevId != null) {
+            updatePlayButtonState(prevId, playing = false)
+        }
+    }
+
+    private fun updatePlayButtonState(commandId: String, playing: Boolean) {
+        val list = commandList ?: return
+        for (i in 0 until list.childCount) {
+            val card = list.getChildAt(i) as? LinearLayout ?: continue
+            if (card.tag == commandId) {
+                val headerRow = card.getChildAt(0) as? LinearLayout ?: continue
+                val playBtn = headerRow.getChildAt(headerRow.childCount - 1) as? TextView ?: continue
+                playBtn.text = if (playing) "\u25A0" else "\u25B6"  // ■ or ▶
+                break
+            }
+        }
     }
 
     private fun flashCardBorder(card: View) {
@@ -337,6 +387,11 @@ class CommandLearningView @JvmOverloads constructor(
                 bg.setStroke((1 * context.resources.displayMetrics.density).toInt(), original)
             }, 100)
         }
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        stopPlayback()
     }
 
     fun animateDotFill(cardIndex: Int, filledCount: Int) {
