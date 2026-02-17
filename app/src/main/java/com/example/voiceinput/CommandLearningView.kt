@@ -36,6 +36,10 @@ class CommandLearningView @JvmOverloads constructor(
         private const val COLOR_ACCENT = 0xFF6BA4FF.toInt()
         private const val COLOR_DANGER = 0xFFE05D5D.toInt()
         private const val MAX_SAMPLES = 5
+
+        fun shouldShowPlayButton(sampleCount: Int): Boolean = sampleCount > 0
+
+        fun latestSampleIndex(sampleCount: Int): Int = if (sampleCount > 0) sampleCount - 1 else -1
     }
 
     var listener: CommandLearningListener? = null
