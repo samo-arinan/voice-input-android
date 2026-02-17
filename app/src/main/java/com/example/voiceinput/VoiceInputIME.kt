@@ -38,6 +38,7 @@ class VoiceInputIME : InputMethodService() {
     private var commandRepo: VoiceCommandRepository? = null
     private var composingBuffer = StringBuilder()
     private var contentFrame: FrameLayout? = null
+    private var sshContextProvider: SshContextProvider? = null
 
     private var tabVoice: TextView? = null
     private var tabCommand: TextView? = null
@@ -160,6 +161,7 @@ class VoiceInputIME : InputMethodService() {
         }
 
         tabVoice?.setOnClickListener { animateTabSelection(TabBarManager.TAB_VOICE) }
+        tabVoice?.setOnLongClickListener { showInputContextDebug(); true }
         tabCommand?.setOnClickListener { animateTabSelection(TabBarManager.TAB_COMMAND) }
         tabInput?.setOnClickListener { animateTabSelection(TabBarManager.TAB_INPUT) }
 
@@ -174,6 +176,13 @@ class VoiceInputIME : InputMethodService() {
         setupVoiceAreaGesture()
 
         return view
+    }
+
+    private fun showInputContextDebug() {
+        val ic = currentInputConnection
+        val before = ic?.getTextBeforeCursor(500, 0)
+        val debug = InputContextReader.formatContextDebug(before)
+        statusText?.text = debug
     }
 
     private fun setupVoiceAreaGesture() {
@@ -304,6 +313,24 @@ class VoiceInputIME : InputMethodService() {
                 GptConverter(apiKey)
             )
         }
+        refreshSshProvider()
+    }
+
+    private fun refreshSshProvider() {
+        val prefsManager = PreferencesManager(
+            getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
+        )
+        if (prefsManager.isSshConfigured()) {
+            sshContextProvider = SshContextProvider(
+                host = prefsManager.getSshHost()!!,
+                port = prefsManager.getSshPort(),
+                username = prefsManager.getSshUsername()!!,
+                privateKey = prefsManager.getSshPrivateKey()!!
+            )
+        } else {
+            sshContextProvider?.disconnect()
+            sshContextProvider = null
+        }
     }
 
     private fun onMicPressed() {
@@ -371,8 +398,21 @@ class VoiceInputIME : InputMethodService() {
 
                 // No command match — Whisper→GPT
                 statusText?.text = "変換中..."
+
+                // Fetch terminal context via SSH (if configured)
+                val tmuxContext = withContext(Dispatchers.IO) {
+                    sshContextProvider?.fetchContext()
+                }
+                val whisperPrompt = SshContextProvider.extractWhisperContext(tmuxContext)
+                val gptContext = SshContextProvider.extractGptContext(tmuxContext)
+
                 val corrections = correctionRepo?.getTopCorrections(20)
-                val chunks = proc.processAudioFile(audioFile, corrections = corrections)
+                val chunks = proc.processAudioFile(
+                    audioFile,
+                    context = whisperPrompt,
+                    terminalContext = gptContext,
+                    corrections = corrections
+                )
                 if (chunks != null) {
                     val fullText = chunks.joinToString("") { it.displayText }
                     committedTextLength = fullText.length
@@ -652,6 +692,7 @@ class VoiceInputIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        sshContextProvider?.disconnect()
         serviceScope.cancel()
     }
 }
