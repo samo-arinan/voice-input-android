@@ -23,6 +23,7 @@ class VoiceInputProcessor(
     suspend fun processAudioFile(
         audioFile: File,
         context: String? = null,
+        terminalContext: String? = null,
         corrections: List<CorrectionEntry>? = null
     ): List<ConversionChunk>? {
         try {
@@ -32,7 +33,7 @@ class VoiceInputProcessor(
 
             val convertedText = withContext(Dispatchers.IO) {
                 if (corrections != null) {
-                    gptConverter.convertWithHistory(rawText, corrections)
+                    gptConverter.convertWithHistory(rawText, corrections, terminalContext)
                 } else {
                     gptConverter.convert(rawText)
                 }
