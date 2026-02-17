@@ -59,6 +59,45 @@ class SshContextProviderTest {
     }
 
     @Test
+    fun `reformatPemKey fixes key with missing newlines`() {
+        val header = "-----BEGIN RSA PRIVATE KEY-----"
+        val footer = "-----END RSA PRIVATE KEY-----"
+        val body = "ABCD" .repeat(20) // 80 chars, no newlines
+        val mangled = "$header\n$body$footer"
+        val result = SshContextProvider.reformatPemKey(mangled)
+        assertTrue(result.startsWith("$header\n"))
+        assertTrue(result.endsWith("\n$footer"))
+        // Body should be split into 64-char lines
+        val lines = result.split("\n")
+        assertEquals(header, lines.first())
+        assertEquals(footer, lines.last())
+        // Middle lines should be max 64 chars
+        lines.drop(1).dropLast(1).forEach { line ->
+            assertTrue("Line too long: ${line.length}", line.length <= 64)
+        }
+    }
+
+    @Test
+    fun `reformatPemKey preserves already formatted key`() {
+        val key = "-----BEGIN RSA PRIVATE KEY-----\n" +
+            "ABCD".repeat(16) + "\n" + // 64 chars
+            "EFGH".repeat(16) + "\n" + // 64 chars
+            "-----END RSA PRIVATE KEY-----"
+        val result = SshContextProvider.reformatPemKey(key)
+        assertEquals(key, result)
+    }
+
+    @Test
+    fun `reformatPemKey handles OPENSSH format`() {
+        val key = "-----BEGIN OPENSSH PRIVATE KEY-----\n" +
+            "ABCD".repeat(30) + // 120 chars, no newlines
+            "\n-----END OPENSSH PRIVATE KEY-----"
+        val result = SshContextProvider.reformatPemKey(key)
+        assertTrue(result.startsWith("-----BEGIN OPENSSH PRIVATE KEY-----\n"))
+        assertTrue(result.endsWith("\n-----END OPENSSH PRIVATE KEY-----"))
+    }
+
+    @Test
     fun `buildCommand without session has no target`() {
         val cmd = SshContextProvider.buildCommand("")
         assertTrue(cmd.contains("tmux capture-pane -p -S -80"))

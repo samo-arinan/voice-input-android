@@ -12,6 +12,21 @@ class SshContextProvider(
     private val tmuxSession: String = ""
 ) {
     companion object {
+        fun reformatPemKey(key: String): String {
+            // Extract header and footer using regex
+            val headerMatch = Regex("-----BEGIN [A-Z ]+-----").find(key) ?: return key
+            val footerMatch = Regex("-----END [A-Z ]+-----").find(key) ?: return key
+            val header = headerMatch.value
+            val footer = footerMatch.value
+            val body = key
+                .substringAfter(header)
+                .substringBefore(footer)
+                .replace(Regex("\\s+"), "")
+            if (body.isEmpty()) return key
+            val formatted = body.chunked(64).joinToString("\n")
+            return "$header\n$formatted\n$footer"
+        }
+
         fun buildCommand(tmuxSession: String): String {
             val target = if (tmuxSession.isBlank()) "" else " -t $tmuxSession"
             return "export PATH=\$PATH:/opt/homebrew/bin:/usr/local/bin; tmux capture-pane$target -p -S -80"
@@ -42,20 +57,30 @@ class SshContextProvider(
     private var cachedSession: Session? = null
 
     fun fetchContext(): String? {
+        return fetchContextDebug().first
+    }
+
+    fun fetchContextDebug(): Pair<String?, String> {
         return try {
             val session = getOrCreateSession()
             val channel = session.openChannel("exec") as ChannelExec
             channel.setCommand(buildCommand(tmuxSession))
+            channel.setErrStream(System.err)
+            val errStream = channel.errStream
             channel.inputStream.use { input ->
                 channel.connect(CONNECT_TIMEOUT_MS)
                 val output = input.bufferedReader().readText()
+                val err = errStream.bufferedReader().readText()
+                val exitStatus = channel.exitStatus
                 channel.disconnect()
-                parseOutput(output)
+                val parsed = parseOutput(output)
+                val debug = "exit=$exitStatus, rawLen=${output.length}, err=${err.take(200)}"
+                Pair(parsed, debug)
             }
         } catch (e: Exception) {
             cachedSession?.disconnect()
             cachedSession = null
-            null
+            Pair(null, "exception: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
@@ -64,7 +89,8 @@ class SshContextProvider(
             if (it.isConnected) return it
         }
         val jsch = JSch()
-        jsch.addIdentity("key", privateKey.toByteArray(), null, null)
+        val formattedKey = reformatPemKey(privateKey)
+        jsch.addIdentity("key", formattedKey.toByteArray(), null, null)
         val session = jsch.getSession(username, host, port)
         session.setConfig("StrictHostKeyChecking", "no")
         session.connect(CONNECT_TIMEOUT_MS)
