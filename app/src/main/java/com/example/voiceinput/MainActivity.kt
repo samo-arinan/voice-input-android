@@ -86,19 +86,13 @@ class MainActivity : AppCompatActivity() {
             val key = privateKeyInput.text.toString()
             val tmuxSession = tmuxSessionInput.text.toString().trim()
 
-            // Debug: show key info first
-            val hasNewlines = key.contains("\n")
-            val keyLines = key.split("\n").size
-            val keyStart = key.take(40)
-            Toast.makeText(this, "key: lines=$keyLines, hasNL=$hasNewlines, start=$keyStart", Toast.LENGTH_LONG).show()
-
             Thread {
                 try {
                     val provider = SshContextProvider(host, port, username, key, tmuxSession)
-                    val (result, debug) = provider.fetchContextDebug()
+                    val result = provider.fetchContext()
                     provider.disconnect()
                     runOnUiThread {
-                        Toast.makeText(this, "result=${result?.length ?: 0} chars | $debug", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, getString(R.string.ssh_test_success) + " (${result?.length ?: 0} chars)", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
