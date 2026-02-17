@@ -20,6 +20,11 @@ class GptConverter(
     private val gson = Gson()
 
     companion object {
+        fun buildUserMessage(rawText: String, terminalContext: String?): String {
+            if (terminalContext.isNullOrBlank()) return rawText
+            return "[端末コンテキスト]\n$terminalContext\n\n[音声入力テキスト]\n$rawText"
+        }
+
         private val SYSTEM_PROMPT = """
             あなたは音声入力の誤字修正ツールです。
             ユーザーの発話テキストを受け取り、テキストを修正して返してください。
@@ -51,7 +56,7 @@ class GptConverter(
         return callGpt(SYSTEM_PROMPT, rawText) ?: rawText
     }
 
-    fun convertWithHistory(rawText: String, corrections: List<CorrectionEntry>): String {
+    fun convertWithHistory(rawText: String, corrections: List<CorrectionEntry>, terminalContext: String? = null): String {
         val prompt = if (corrections.isEmpty()) {
             SYSTEM_PROMPT
         } else {
@@ -65,7 +70,8 @@ class GptConverter(
                 $historyLines
             """.trimIndent()
         }
-        return callGpt(prompt, rawText) ?: rawText
+        val userMessage = buildUserMessage(rawText, terminalContext)
+        return callGpt(prompt, userMessage) ?: rawText
     }
 
     fun convertHiraganaToKanji(hiragana: String): List<String> {
