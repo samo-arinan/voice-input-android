@@ -50,6 +50,7 @@ class CommandLearningView @JvmOverloads constructor(
     private var keyboardContainer: View? = null
     private var commandRepo: VoiceCommandRepository? = null
     private var isKeyboardVisible = false
+    private var expandedCommandId: String? = null
 
     init {
         val view = LayoutInflater.from(context).inflate(R.layout.view_command_learning, this, true)
@@ -132,6 +133,7 @@ class CommandLearningView @JvmOverloads constructor(
     }
 
     fun refreshCommandList() {
+        expandedCommandId = null
         commandList?.removeAllViews()
         val commands = commandRepo?.getCommands() ?: return
 
@@ -157,67 +159,25 @@ class CommandLearningView @JvmOverloads constructor(
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.bg_command_card)
-            setPadding(dp(18), dp(14), dp(18), dp(14))
+            tag = cmd.id
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dp(8) }
+            ).apply { bottomMargin = dp(6) }
             layoutParams = params
         }
 
-        // Command name
-        val nameView = TextView(context).apply {
-            text = cmd.label
-            setTextColor(COLOR_TEXT_MAIN)
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
+        // === Header row (always visible): [dots] [name] [play] ===
+        val headerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
         }
-        card.addView(nameView)
-
-        // Divider
-        val divider = View(context).apply {
-            setBackgroundColor(COLOR_BORDER)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
-            ).apply {
-                topMargin = dp(8)
-                bottomMargin = dp(8)
-            }
-        }
-        card.addView(divider)
-
-        // Send text
-        val sendView = TextView(context).apply {
-            text = "SEND: /${cmd.text.replace("\n", "\\n")}"
-            setTextColor(COLOR_TEXT_SUB)
-            textSize = 11f
-            letterSpacing = 0.15f
-        }
-        card.addView(sendView)
-
-        // TRAINING label
-        val trainingLabel = TextView(context).apply {
-            text = "TRAINING"
-            setTextColor(COLOR_TEXT_SUB)
-            textSize = 9f
-            letterSpacing = 0.2f
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(8) }
-            layoutParams = params
-        }
-        card.addView(trainingLabel)
 
         // Dot indicators
         val dotRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(4) }
-            layoutParams = params
         }
         for (i in 0 until MAX_SAMPLES) {
             val dot = ImageView(context).apply {
@@ -226,13 +186,69 @@ class CommandLearningView @JvmOverloads constructor(
                 )
                 val size = dp(6)
                 val params = LinearLayout.LayoutParams(size, size).apply {
-                    marginEnd = dp(4)
+                    marginEnd = dp(3)
                 }
                 layoutParams = params
             }
             dotRow.addView(dot)
         }
-        card.addView(dotRow)
+        headerRow.addView(dotRow)
+
+        // Command name
+        val nameView = TextView(context).apply {
+            text = cmd.label
+            setTextColor(COLOR_TEXT_MAIN)
+            textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(dp(10), 0, dp(8), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+            )
+        }
+        headerRow.addView(nameView)
+
+        // Play button (visible only if sampleCount > 0)
+        val playBtn = TextView(context).apply {
+            text = "\u25B6"  // ▶
+            setTextColor(COLOR_ACCENT)
+            textSize = 16f
+            gravity = Gravity.CENTER
+            val size = dp(32)
+            layoutParams = LinearLayout.LayoutParams(size, size)
+            visibility = if (shouldShowPlayButton(cmd.sampleCount)) View.VISIBLE else View.GONE
+            setOnClickListener {
+                onPlayTapped(cmd)
+            }
+        }
+        headerRow.addView(playBtn)
+
+        card.addView(headerRow)
+
+        // === Expandable section (hidden by default) ===
+        val expandSection = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), 0, dp(12), dp(8))
+            visibility = if (expandedCommandId == cmd.id) View.VISIBLE else View.GONE
+            tag = "expandSection"
+        }
+
+        // Divider
+        val divider = View(context).apply {
+            setBackgroundColor(COLOR_BORDER)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
+            ).apply { bottomMargin = dp(6) }
+        }
+        expandSection.addView(divider)
+
+        // Send text
+        val sendView = TextView(context).apply {
+            text = "SEND: /${cmd.text.replace("\n", "\\n")}"
+            setTextColor(COLOR_TEXT_SUB)
+            textSize = 11f
+            letterSpacing = 0.15f
+        }
+        expandSection.addView(sendView)
 
         // Button row
         val buttonRow = LinearLayout(context).apply {
@@ -241,7 +257,7 @@ class CommandLearningView @JvmOverloads constructor(
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(10) }
+            ).apply { topMargin = dp(8) }
             layoutParams = params
         }
 
@@ -254,7 +270,6 @@ class CommandLearningView @JvmOverloads constructor(
             setBackgroundResource(R.drawable.btn_outline_accent)
             setPadding(dp(16), dp(6), dp(16), dp(6))
             setOnClickListener {
-                // Flash card border
                 flashCardBorder(card)
                 listener?.onRecordSample(cmd.id, cmd.sampleCount)
             }
@@ -280,9 +295,37 @@ class CommandLearningView @JvmOverloads constructor(
 
         buttonRow.addView(trainBtn)
         buttonRow.addView(deleteBtn)
-        card.addView(buttonRow)
+        expandSection.addView(buttonRow)
+
+        card.addView(expandSection)
+
+        // Tap header to expand/collapse
+        headerRow.setOnClickListener {
+            val section = card.findViewWithTag<View>("expandSection")
+            if (expandedCommandId == cmd.id) {
+                expandedCommandId = null
+                section?.visibility = View.GONE
+            } else {
+                collapseAllCards()
+                expandedCommandId = cmd.id
+                section?.visibility = View.VISIBLE
+            }
+        }
 
         return card
+    }
+
+    private fun collapseAllCards() {
+        expandedCommandId = null
+        val list = commandList ?: return
+        for (i in 0 until list.childCount) {
+            val child = list.getChildAt(i)
+            child.findViewWithTag<View>("expandSection")?.visibility = View.GONE
+        }
+    }
+
+    private fun onPlayTapped(cmd: VoiceCommand) {
+        // Will be implemented in Task 4
     }
 
     private fun flashCardBorder(card: View) {
@@ -298,8 +341,10 @@ class CommandLearningView @JvmOverloads constructor(
 
     fun animateDotFill(cardIndex: Int, filledCount: Int) {
         val card = commandList?.getChildAt(cardIndex) as? LinearLayout ?: return
-        // Find the dot row (5th child: name, divider, send, training, dots, buttons)
-        val dotRow = card.getChildAt(4) as? LinearLayout ?: return
+        // Header row is child 0, expand section is child 1
+        val headerRow = card.getChildAt(0) as? LinearLayout ?: return
+        // Dot row is first child of header row
+        val dotRow = headerRow.getChildAt(0) as? LinearLayout ?: return
         for (i in 0 until dotRow.childCount) {
             if (i < filledCount) {
                 val dot = dotRow.getChildAt(i) as? ImageView ?: continue
