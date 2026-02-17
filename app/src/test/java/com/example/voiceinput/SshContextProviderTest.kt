@@ -57,4 +57,19 @@ class SshContextProviderTest {
     fun `extractGptContext returns null for null input`() {
         assertNull(SshContextProvider.extractGptContext(null))
     }
+
+    @Test
+    fun `buildCommand without session has no target`() {
+        assertEquals("tmux capture-pane -p -S -80", SshContextProvider.buildCommand(""))
+    }
+
+    @Test
+    fun `buildCommand with session includes target`() {
+        assertEquals("tmux capture-pane -t dev -p -S -80", SshContextProvider.buildCommand("dev"))
+    }
+
+    @Test
+    fun `buildCommand with blank session has no target`() {
+        assertEquals("tmux capture-pane -p -S -80", SshContextProvider.buildCommand("  "))
+    }
 }

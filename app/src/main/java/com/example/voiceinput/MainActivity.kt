@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         val hostInput = findViewById<EditText>(R.id.sshHostInput)
         val portInput = findViewById<EditText>(R.id.sshPortInput)
         val usernameInput = findViewById<EditText>(R.id.sshUsernameInput)
+        val tmuxSessionInput = findViewById<EditText>(R.id.sshTmuxSessionInput)
         val privateKeyInput = findViewById<EditText>(R.id.sshPrivateKeyInput)
         val saveButton = findViewById<Button>(R.id.sshSaveButton)
         val testButton = findViewById<Button>(R.id.sshTestButton)
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         prefsManager.getSshHost()?.let { hostInput.setText(it) }
         portInput.setText(prefsManager.getSshPort().toString())
         prefsManager.getSshUsername()?.let { usernameInput.setText(it) }
+        tmuxSessionInput.setText(prefsManager.getSshTmuxSession())
         prefsManager.getSshPrivateKey()?.let { privateKeyInput.setText(it) }
 
         saveButton.setOnClickListener {
@@ -72,6 +74,7 @@ class MainActivity : AppCompatActivity() {
             prefsManager.saveSshHost(hostInput.text.toString().trim())
             prefsManager.saveSshPort(portInput.text.toString().toIntOrNull() ?: 22)
             prefsManager.saveSshUsername(usernameInput.text.toString().trim())
+            prefsManager.saveSshTmuxSession(tmuxSessionInput.text.toString().trim())
             prefsManager.saveSshPrivateKey(privateKeyInput.text.toString())
             Toast.makeText(this, R.string.ssh_saved, Toast.LENGTH_SHORT).show()
         }
@@ -81,10 +84,11 @@ class MainActivity : AppCompatActivity() {
             val port = portInput.text.toString().toIntOrNull() ?: 22
             val username = usernameInput.text.toString().trim()
             val key = privateKeyInput.text.toString()
+            val tmuxSession = tmuxSessionInput.text.toString().trim()
 
             Thread {
                 try {
-                    val provider = SshContextProvider(host, port, username, key)
+                    val provider = SshContextProvider(host, port, username, key, tmuxSession)
                     val result = provider.fetchContext()
                     provider.disconnect()
                     runOnUiThread {

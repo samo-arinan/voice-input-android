@@ -8,10 +8,14 @@ class SshContextProvider(
     private val host: String,
     private val port: Int,
     private val username: String,
-    private val privateKey: String
+    private val privateKey: String,
+    private val tmuxSession: String = ""
 ) {
     companion object {
-        private const val COMMAND = "tmux capture-pane -p -S -80"
+        fun buildCommand(tmuxSession: String): String {
+            val target = if (tmuxSession.isBlank()) "" else " -t $tmuxSession"
+            return "tmux capture-pane$target -p -S -80"
+        }
         private const val CONNECT_TIMEOUT_MS = 3000
         private const val WHISPER_CONTEXT_LINES = 20
 
@@ -41,7 +45,7 @@ class SshContextProvider(
         return try {
             val session = getOrCreateSession()
             val channel = session.openChannel("exec") as ChannelExec
-            channel.setCommand(COMMAND)
+            channel.setCommand(buildCommand(tmuxSession))
             channel.inputStream.use { input ->
                 channel.connect(CONNECT_TIMEOUT_MS)
                 val output = input.bufferedReader().readText()

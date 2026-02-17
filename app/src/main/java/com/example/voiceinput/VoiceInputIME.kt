@@ -332,7 +332,8 @@ class VoiceInputIME : InputMethodService() {
                 host = prefsManager.getSshHost()!!,
                 port = prefsManager.getSshPort(),
                 username = prefsManager.getSshUsername()!!,
-                privateKey = prefsManager.getSshPrivateKey()!!
+                privateKey = prefsManager.getSshPrivateKey()!!,
+                tmuxSession = prefsManager.getSshTmuxSession()
             )
         } else {
             sshContextProvider?.disconnect()
