@@ -47,7 +47,56 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupModelSpinner()
+        setupSshSettings()
         requestMicrophonePermission()
+    }
+
+    private fun setupSshSettings() {
+        val sshSwitch = findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.sshContextSwitch)
+        val hostInput = findViewById<EditText>(R.id.sshHostInput)
+        val portInput = findViewById<EditText>(R.id.sshPortInput)
+        val usernameInput = findViewById<EditText>(R.id.sshUsernameInput)
+        val privateKeyInput = findViewById<EditText>(R.id.sshPrivateKeyInput)
+        val saveButton = findViewById<Button>(R.id.sshSaveButton)
+        val testButton = findViewById<Button>(R.id.sshTestButton)
+
+        // Load existing values
+        sshSwitch.isChecked = prefsManager.isSshContextEnabled()
+        prefsManager.getSshHost()?.let { hostInput.setText(it) }
+        portInput.setText(prefsManager.getSshPort().toString())
+        prefsManager.getSshUsername()?.let { usernameInput.setText(it) }
+        prefsManager.getSshPrivateKey()?.let { privateKeyInput.setText(it) }
+
+        saveButton.setOnClickListener {
+            prefsManager.saveSshContextEnabled(sshSwitch.isChecked)
+            prefsManager.saveSshHost(hostInput.text.toString().trim())
+            prefsManager.saveSshPort(portInput.text.toString().toIntOrNull() ?: 22)
+            prefsManager.saveSshUsername(usernameInput.text.toString().trim())
+            prefsManager.saveSshPrivateKey(privateKeyInput.text.toString())
+            Toast.makeText(this, R.string.ssh_saved, Toast.LENGTH_SHORT).show()
+        }
+
+        testButton.setOnClickListener {
+            val host = hostInput.text.toString().trim()
+            val port = portInput.text.toString().toIntOrNull() ?: 22
+            val username = usernameInput.text.toString().trim()
+            val key = privateKeyInput.text.toString()
+
+            Thread {
+                try {
+                    val provider = SshContextProvider(host, port, username, key)
+                    val result = provider.fetchContext()
+                    provider.disconnect()
+                    runOnUiThread {
+                        Toast.makeText(this, getString(R.string.ssh_test_success) + " (${result?.length ?: 0} chars)", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this, "${getString(R.string.ssh_test_fail)}: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }.start()
+        }
     }
 
     private val whisperModels = arrayOf("gpt-4o-transcribe", "whisper-1")

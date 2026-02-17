@@ -12,4 +12,15 @@
     <string name="ime_mic_description">マイクボタン</string>
     <string name="ime_switch_keyboard">キーボード切替</string>
     <string name="whisper_model_label">音声認識モデル</string>
+    <string name="ssh_settings_title">SSH コンテキスト設定</string>
+    <string name="ssh_context_enable">端末コンテキストを有効化</string>
+    <string name="ssh_host_hint">ホスト名 / IP</string>
+    <string name="ssh_username_hint">ユーザー名</string>
+    <string name="ssh_port_hint">ポート</string>
+    <string name="ssh_private_key_hint">秘密鍵（PEM形式でペースト）</string>
+    <string name="ssh_save">SSH設定を保存</string>
+    <string name="ssh_test_connection">接続テスト</string>
+    <string name="ssh_test_success">接続成功！</string>
+    <string name="ssh_test_fail">接続失敗</string>
+    <string name="ssh_saved">SSH設定を保存しました</string>
 </resources>
