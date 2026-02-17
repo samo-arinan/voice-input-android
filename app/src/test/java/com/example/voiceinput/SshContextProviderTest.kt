@@ -60,16 +60,20 @@ class SshContextProviderTest {
 
     @Test
     fun `buildCommand without session has no target`() {
-        assertEquals("tmux capture-pane -p -S -80", SshContextProvider.buildCommand(""))
+        val cmd = SshContextProvider.buildCommand("")
+        assertTrue(cmd.contains("tmux capture-pane -p -S -80"))
+        assertFalse(cmd.contains(" -t "))
     }
 
     @Test
     fun `buildCommand with session includes target`() {
-        assertEquals("tmux capture-pane -t dev -p -S -80", SshContextProvider.buildCommand("dev"))
+        val cmd = SshContextProvider.buildCommand("dev")
+        assertTrue(cmd.contains("tmux capture-pane -t dev -p -S -80"))
     }
 
     @Test
     fun `buildCommand with blank session has no target`() {
-        assertEquals("tmux capture-pane -p -S -80", SshContextProvider.buildCommand("  "))
+        val cmd = SshContextProvider.buildCommand("  ")
+        assertFalse(cmd.contains(" -t "))
     }
 }

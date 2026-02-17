@@ -14,7 +14,7 @@ class SshContextProvider(
     companion object {
         fun buildCommand(tmuxSession: String): String {
             val target = if (tmuxSession.isBlank()) "" else " -t $tmuxSession"
-            return "tmux capture-pane$target -p -S -80"
+            return "export PATH=\$PATH:/opt/homebrew/bin:/usr/local/bin; tmux capture-pane$target -p -S -80"
         }
         private const val CONNECT_TIMEOUT_MS = 3000
         private const val WHISPER_CONTEXT_LINES = 20
