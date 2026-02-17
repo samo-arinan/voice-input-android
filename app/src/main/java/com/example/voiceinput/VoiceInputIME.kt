@@ -181,8 +181,15 @@ class VoiceInputIME : InputMethodService() {
     private fun showInputContextDebug() {
         val ic = currentInputConnection
         val before = ic?.getTextBeforeCursor(500, 0)
-        val debug = InputContextReader.formatContextDebug(before)
-        statusText?.text = debug
+        val icDebug = InputContextReader.formatContextDebug(before)
+
+        serviceScope.launch {
+            val sshText = withContext(Dispatchers.IO) {
+                sshContextProvider?.fetchContext()
+            }
+            val sshDebug = if (sshText != null) "SSH[${sshText.length}]: OK" else "SSH: N/A"
+            statusText?.text = "$icDebug | $sshDebug"
+        }
     }
 
     private fun setupVoiceAreaGesture() {
