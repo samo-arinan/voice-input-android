@@ -37,6 +37,7 @@ class VoiceInputIME : InputMethodService() {
     private var commandRepo: VoiceCommandRepository? = null
     private var contentFrame: FrameLayout? = null
     private var sshContextProvider: SshContextProvider? = null
+    private var ntfyListener: NtfyListener? = null
 
     private var tabVoice: TextView? = null
     private var tabCommand: TextView? = null
@@ -147,6 +148,8 @@ class VoiceInputIME : InputMethodService() {
 
         // Setup mic double-tap gesture on voiceModeArea
         setupVoiceAreaGesture()
+
+        refreshNtfyListener()
 
         return view
     }
@@ -312,6 +315,25 @@ class VoiceInputIME : InputMethodService() {
             sshContextProvider?.disconnect()
             sshContextProvider = null
         }
+    }
+
+    private fun refreshNtfyListener() {
+        ntfyListener?.stop()
+        val topic = PreferencesManager(
+            getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
+        ).getNtfyTopic()
+        if (topic.isNotBlank()) {
+            ntfyListener = NtfyListener(topic) { _ ->
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    showTmuxNotification()
+                }
+            }
+            ntfyListener?.start()
+        }
+    }
+
+    private fun showTmuxNotification() {
+        // Will be implemented in Task 7
     }
 
     private fun onMicPressed() {
@@ -653,6 +675,7 @@ class VoiceInputIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        ntfyListener?.stop()
         tmuxView?.stopPolling()
         sshContextProvider?.disconnect()
         serviceScope.cancel()
