@@ -58,6 +58,36 @@ class VoiceInputIME : InputMethodService() {
         tmuxView = view.findViewById(R.id.tmuxView)
         contentFrame = view.findViewById(R.id.contentFrame)
 
+        tmuxView?.listener = object : TmuxViewListener {
+            override fun onSendKeys(key: String) {
+                serviceScope.launch(Dispatchers.IO) {
+                    try {
+                        sshContextProvider?.sendKeys(key)
+                        delay(100)
+                        val text = sshContextProvider?.fetchLines(20)
+                        withContext(Dispatchers.Main) {
+                            tmuxView?.updateOutput(text)
+                        }
+                    } catch (e: Exception) {
+                        // Silently ignore SSH errors
+                    }
+                }
+            }
+
+            override fun onRequestRefresh(callback: (String?) -> Unit) {
+                serviceScope.launch(Dispatchers.IO) {
+                    val text = try {
+                        sshContextProvider?.fetchLines(20)
+                    } catch (e: Exception) {
+                        null
+                    }
+                    withContext(Dispatchers.Main) {
+                        callback(text)
+                    }
+                }
+            }
+        }
+
         // Initialize correction repository
         val correctionsFile = File(filesDir, "corrections.json")
         correctionRepo = CorrectionRepository(correctionsFile)
@@ -552,9 +582,11 @@ class VoiceInputIME : InputMethodService() {
         commandLearning?.visibility = View.GONE
         tmuxView?.visibility = View.VISIBLE
         contentFrame?.setBackgroundColor(0xFF111418.toInt())
+        tmuxView?.startPolling()
     }
 
     private fun showVoiceModeContent() {
+        tmuxView?.stopPolling()
         tmuxView?.visibility = View.GONE
         commandLearning?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
@@ -562,6 +594,7 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private fun showLearningModeContent() {
+        tmuxView?.stopPolling()
         voiceModeArea?.visibility = View.GONE
         tmuxView?.visibility = View.GONE
         commandLearning?.visibility = View.VISIBLE
@@ -620,6 +653,7 @@ class VoiceInputIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        tmuxView?.stopPolling()
         sshContextProvider?.disconnect()
         serviceScope.cancel()
     }
