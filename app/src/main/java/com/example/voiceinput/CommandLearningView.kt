@@ -246,7 +246,7 @@ class CommandLearningView @JvmOverloads constructor(
 
         // Send text
         val sendView = TextView(context).apply {
-            text = "SEND: /${cmd.text.replace("\n", "\\n")}"
+            text = cmd.text.replace("\n", "\\n")
             setTextColor(COLOR_TEXT_SUB)
             textSize = 11f
             letterSpacing = 0.15f

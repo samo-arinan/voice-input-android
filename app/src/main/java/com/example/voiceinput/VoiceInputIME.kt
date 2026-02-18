@@ -497,18 +497,18 @@ class VoiceInputIME : InputMethodService() {
         val best = distances.first()
         val matched = best.second < best.third
 
-        // Always show distance on status for tuning
-        val distStr = "%.1f".format(best.second)
+        // Show all distances for tuning
+        val allDist = distances.joinToString(" ") { "%.0f:%s".format(it.second, it.first.label) }
         if (matched) {
             audioFile.delete()
             val ic = currentInputConnection ?: return false
             CommandExecutor.execute(best.first.text, ic)
-            statusText?.text = "CMD: ${best.first.label} (dist=$distStr)"
+            statusText?.text = "✓${best.first.label} $allDist"
             delay(5000)
             statusText?.text = "ダブルタップで音声入力"
             return true
         } else {
-            statusText?.text = "非CMD: ${best.first.label} (dist=$distStr)"
+            statusText?.text = "✗ $allDist"
             return false
         }
     }
