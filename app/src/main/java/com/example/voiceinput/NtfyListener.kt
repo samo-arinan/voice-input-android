@@ -1,5 +1,6 @@
 package com.example.voiceinput
 
+import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -19,16 +20,24 @@ class NtfyListener(
 
     fun start() {
         if (topic.isBlank()) return
+        val url = "https://ntfy.sh/$topic/sse"
+        Log.d("NtfyListener", "Connecting to $url")
+
         val request = Request.Builder()
-            .url("https://ntfy.sh/$topic/sse")
+            .url(url)
             .build()
 
         val factory = EventSources.createFactory(client)
         eventSource = factory.newEventSource(request, object : EventSourceListener() {
             override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
-                onNotification(data)
+                Log.d("NtfyListener", "SSE onEvent: type=$type")
+                // ntfy.sh sends no "event:" line for messages, so type is null/empty
+                if (type.isNullOrEmpty() || type == "message") {
+                    onNotification(data)
+                }
             }
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                Log.e("NtfyListener", "SSE onFailure: ${t?.message}, response=${response?.code}")
                 // Reconnect after delay
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     stop()

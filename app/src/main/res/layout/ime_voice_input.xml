@@ -106,6 +106,7 @@
                 android:layout_gravity="top|end"
                 android:layout_marginTop="4dp"
                 android:layout_marginEnd="8dp"
+                android:elevation="8dp"
                 android:background="@drawable/dot_filled"
                 android:backgroundTint="#4ADE80"
                 android:visibility="gone" />

@@ -327,11 +327,11 @@ class VoiceInputIME : InputMethodService() {
             getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
         ).getNtfyTopic()
         if (topic.isNotBlank()) {
-            ntfyListener = NtfyListener(topic) { _ ->
+            ntfyListener = NtfyListener(topic, onNotification = { _ ->
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                     showTmuxNotification()
                 }
-            }
+            })
             ntfyListener?.start()
         }
     }
