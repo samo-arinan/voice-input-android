@@ -80,20 +80,37 @@
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp" />
 
-        <TextView
-            android:id="@+id/tabInput"
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="TMUX"
-            android:textSize="10sp"
-            android:letterSpacing="0.2"
-            android:gravity="center"
-            android:padding="8dp"
-            android:elevation="6dp"
-            android:background="@drawable/bg_tab_unselected"
-            android:textColor="#8B949E"
-            android:layout_marginStart="4dp" />
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:id="@+id/tabInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TMUX"
+                android:textSize="10sp"
+                android:letterSpacing="0.2"
+                android:gravity="center"
+                android:padding="8dp"
+                android:elevation="6dp"
+                android:background="@drawable/bg_tab_unselected"
+                android:textColor="#8B949E" />
+
+            <View
+                android:id="@+id/tmuxNotificationDot"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/dot_filled"
+                android:backgroundTint="#4ADE80"
+                android:visibility="gone" />
+
+        </FrameLayout>
 
     </LinearLayout>
 

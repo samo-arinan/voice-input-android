@@ -1,5 +1,6 @@
 package com.example.voiceinput
 
+import android.animation.ObjectAnimator
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.view.ActionMode
@@ -38,6 +39,8 @@ class VoiceInputIME : InputMethodService() {
     private var contentFrame: FrameLayout? = null
     private var sshContextProvider: SshContextProvider? = null
     private var ntfyListener: NtfyListener? = null
+    private var notificationDot: View? = null
+    private var notificationAnimator: ObjectAnimator? = null
 
     private var tabVoice: TextView? = null
     private var tabCommand: TextView? = null
@@ -125,6 +128,7 @@ class VoiceInputIME : InputMethodService() {
         tabVoice = view.findViewById(R.id.tabVoice)
         tabCommand = view.findViewById(R.id.tabCommand)
         tabInput = view.findViewById(R.id.tabInput)
+        notificationDot = view.findViewById(R.id.tmuxNotificationDot)
 
         tabBarManager = TabBarManager { tab ->
             when (tab) {
@@ -333,7 +337,20 @@ class VoiceInputIME : InputMethodService() {
     }
 
     private fun showTmuxNotification() {
-        // Will be implemented in Task 7
+        notificationDot?.visibility = View.VISIBLE
+        notificationAnimator?.cancel()
+        notificationAnimator = ObjectAnimator.ofFloat(notificationDot, "alpha", 0f, 1f).apply {
+            duration = 500
+            repeatMode = ObjectAnimator.REVERSE
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
+    }
+
+    private fun clearTmuxNotification() {
+        notificationAnimator?.cancel()
+        notificationDot?.alpha = 1f
+        notificationDot?.visibility = View.GONE
     }
 
     private fun onMicPressed() {
@@ -605,6 +622,7 @@ class VoiceInputIME : InputMethodService() {
         tmuxView?.visibility = View.VISIBLE
         contentFrame?.setBackgroundColor(0xFF111418.toInt())
         tmuxView?.startPolling()
+        clearTmuxNotification()
     }
 
     private fun showVoiceModeContent() {
