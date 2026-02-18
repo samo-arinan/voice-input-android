@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#111418">
+
+    <!-- tmux output area -->
+    <ScrollView
+        android:id="@+id/tmuxScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tmuxOutput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#E6EDF3"
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="2dp" />
+
+    </ScrollView>
+
+    <!-- separator -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2B323C" />
+
+    <!-- keyboard row -->
+    <LinearLayout
+        android:id="@+id/tmuxKeyboard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#1A1F26"
+        android:padding="4dp"
+        android:gravity="center_vertical" />
+
+</LinearLayout>
