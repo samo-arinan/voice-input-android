@@ -27,16 +27,14 @@ class VoiceInputIME : InputMethodService() {
     private var currentFullText: String? = null
     private var replacementRange: Pair<Int, Int>? = null
     private var isToggleRecording = false
-    private var isFlickMode = false
     private var voiceModeArea: LinearLayout? = null
-    private var flickKeyboard: FlickKeyboardView? = null
+    private var tmuxView: TmuxView? = null
     private var correctionRepo: CorrectionRepository? = null
     private var commandLearning: CommandLearningView? = null
     private var sampleRecorder: AudioRecorder? = null
     private var recordingCommandId: String? = null
     private var recordingSampleIndex: Int = 0
     private var commandRepo: VoiceCommandRepository? = null
-    private var composingBuffer = StringBuilder()
     private var contentFrame: FrameLayout? = null
     private var sshContextProvider: SshContextProvider? = null
 
@@ -57,7 +55,7 @@ class VoiceInputIME : InputMethodService() {
         candidateButton?.setOnClickListener { onCandidateButtonTap() }
 
         voiceModeArea = view.findViewById(R.id.voiceModeArea)
-        flickKeyboard = view.findViewById(R.id.flickKeyboard)
+        tmuxView = view.findViewById(R.id.tmuxView)
         contentFrame = view.findViewById(R.id.contentFrame)
 
         // Initialize correction repository
@@ -77,61 +75,6 @@ class VoiceInputIME : InputMethodService() {
             override fun onDeleteCommand(commandId: String) {
                 commandRepo?.deleteCommand(commandId)
                 commandLearning?.refreshCommandList()
-            }
-        }
-
-        flickKeyboard?.listener = object : FlickKeyboardListener {
-            override fun onCharacterInput(char: String) {
-                composingBuffer.append(char)
-                currentInputConnection?.setComposingText(composingBuffer.toString(), 1)
-            }
-
-            override fun onBackspace() {
-                if (composingBuffer.isNotEmpty()) {
-                    composingBuffer.deleteCharAt(composingBuffer.length - 1)
-                    if (composingBuffer.isEmpty()) {
-                        currentInputConnection?.finishComposingText()
-                    } else {
-                        currentInputConnection?.setComposingText(composingBuffer.toString(), 1)
-                    }
-                } else {
-                    currentInputConnection?.sendKeyEvent(
-                        KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL)
-                    )
-                    currentInputConnection?.sendKeyEvent(
-                        KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL)
-                    )
-                }
-            }
-
-            override fun onConvert() {
-                if (composingBuffer.isEmpty()) return
-                val hiragana = composingBuffer.toString()
-                serviceScope.launch {
-                    val prefsManager = PreferencesManager(
-                        getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
-                    )
-                    val apiKey = prefsManager.getApiKey() ?: return@launch
-                    val proc = processor
-                    val converter = if (proc != null) {
-                        proc.gptConverter
-                    } else {
-                        GptConverter(apiKey)
-                    }
-                    val candidates = withContext(Dispatchers.IO) {
-                        converter.convertHiraganaToKanji(hiragana)
-                    }
-                    if (candidates.isNotEmpty()) {
-                        showKanjiCandidatePopup(candidates, hiragana)
-                    }
-                }
-            }
-
-            override fun onConfirm() {
-                if (composingBuffer.isNotEmpty()) {
-                    currentInputConnection?.finishComposingText()
-                    composingBuffer.clear()
-                }
             }
         }
 
@@ -156,14 +99,14 @@ class VoiceInputIME : InputMethodService() {
             when (tab) {
                 TabBarManager.TAB_VOICE -> showVoiceModeContent()
                 TabBarManager.TAB_COMMAND -> showLearningModeContent()
-                TabBarManager.TAB_INPUT -> showFlickKeyboardContent()
+                TabBarManager.TAB_TMUX -> showTmuxContent()
             }
         }
 
         tabVoice?.setOnClickListener { animateTabSelection(TabBarManager.TAB_VOICE) }
         tabVoice?.setOnLongClickListener { showInputContextDebug(); true }
         tabCommand?.setOnClickListener { animateTabSelection(TabBarManager.TAB_COMMAND) }
-        tabInput?.setOnClickListener { animateTabSelection(TabBarManager.TAB_INPUT) }
+        tabInput?.setOnClickListener { animateTabSelection(TabBarManager.TAB_TMUX) }
 
         // Apply initial tab style (VOICE selected)
         applyTabStyles()
@@ -210,7 +153,7 @@ class VoiceInputIME : InputMethodService() {
                 val dy = e2.y - e1.y
                 val dx = e2.x - e1.x
                 if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30) {
-                    animateTabSelection(TabBarManager.TAB_INPUT)
+                    animateTabSelection(TabBarManager.TAB_TMUX)
                     return true
                 }
                 return false
@@ -301,7 +244,7 @@ class VoiceInputIME : InputMethodService() {
     private fun getTabView(tab: Int): TextView? = when (tab) {
         TabBarManager.TAB_VOICE -> tabVoice
         TabBarManager.TAB_COMMAND -> tabCommand
-        TabBarManager.TAB_INPUT -> tabInput
+        TabBarManager.TAB_TMUX -> tabInput
         else -> null
     }
 
@@ -604,63 +547,30 @@ class VoiceInputIME : InputMethodService() {
         }
     }
 
-    private fun showFlickKeyboardContent() {
-        isFlickMode = true
+    private fun showTmuxContent() {
         voiceModeArea?.visibility = View.GONE
         commandLearning?.visibility = View.GONE
-        flickKeyboard?.visibility = View.VISIBLE
-        contentFrame?.setBackgroundColor(0)
+        tmuxView?.visibility = View.VISIBLE
+        contentFrame?.setBackgroundColor(0xFF111418.toInt())
     }
 
     private fun showVoiceModeContent() {
-        isFlickMode = false
-        if (composingBuffer.isNotEmpty()) {
-            currentInputConnection?.finishComposingText()
-            composingBuffer.clear()
-        }
-        flickKeyboard?.visibility = View.GONE
+        tmuxView?.visibility = View.GONE
         commandLearning?.visibility = View.GONE
         voiceModeArea?.visibility = View.VISIBLE
         contentFrame?.setBackgroundColor(0)
     }
 
     private fun showLearningModeContent() {
-        isFlickMode = false
         voiceModeArea?.visibility = View.GONE
-        flickKeyboard?.visibility = View.GONE
+        tmuxView?.visibility = View.GONE
         commandLearning?.visibility = View.VISIBLE
         commandLearning?.refreshCommandList()
         contentFrame?.setBackgroundColor(0xFF111418.toInt())
     }
 
-    private fun showFlickKeyboard() {
-        animateTabSelection(TabBarManager.TAB_INPUT)
-    }
-
     private fun showVoiceMode() {
         animateTabSelection(TabBarManager.TAB_VOICE)
-    }
-
-    private fun showKanjiCandidatePopup(candidates: List<String>, hiragana: String) {
-        val anchor = flickKeyboard ?: return
-        val popup = PopupMenu(this, anchor)
-
-        candidates.forEachIndexed { i, candidate ->
-            popup.menu.add(0, i, i, candidate)
-        }
-
-        popup.setOnMenuItemClickListener { item ->
-            val selected = candidates[item.itemId]
-            composingBuffer.clear()
-            currentInputConnection?.commitText(selected, 1)
-            if (hiragana != selected) {
-                serviceScope.launch(Dispatchers.IO) {
-                    correctionRepo?.save(hiragana, selected)
-                }
-            }
-            true
-        }
-        popup.show()
     }
 
     private fun recordCommandSample(commandId: String, sampleIndex: Int) {
@@ -706,7 +616,6 @@ class VoiceInputIME : InputMethodService() {
 
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
-        composingBuffer.clear()
     }
 
     override fun onDestroy() {

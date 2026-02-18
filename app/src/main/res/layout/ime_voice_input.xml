@@ -85,7 +85,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="INPUT"
+            android:text="TMUX"
             android:textSize="10sp"
             android:letterSpacing="0.2"
             android:gravity="center"
@@ -127,12 +127,11 @@
 
         </LinearLayout>
 
-        <!-- フリックキーボード（デフォルト非表示） -->
-        <com.example.voiceinput.FlickKeyboardView
-            android:id="@+id/flickKeyboard"
+        <!-- TMUXモード（デフォルト非表示） -->
+        <com.example.voiceinput.TmuxView
+            android:id="@+id/tmuxView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="4dp"
+            android:layout_height="250dp"
             android:visibility="gone" />
 
         <!-- 学習モード（デフォルト非表示） -->

@@ -5,7 +5,7 @@ class TabBarManager(private val onContentChange: (Int) -> Unit) {
     companion object {
         const val TAB_VOICE = 0
         const val TAB_COMMAND = 1
-        const val TAB_INPUT = 2
+        const val TAB_TMUX = 2
         const val ANIM_DURATION_MS = 90L
         const val FLASH_DURATION_MS = 20L
     }

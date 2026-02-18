@@ -28,8 +28,8 @@ class TabBarManagerTest {
 
     @Test
     fun `selectTab notifies content change`() {
-        manager.selectTab(TabBarManager.TAB_INPUT)
-        assertEquals(listOf(TabBarManager.TAB_INPUT), contentShown)
+        manager.selectTab(TabBarManager.TAB_TMUX)
+        assertEquals(listOf(TabBarManager.TAB_TMUX), contentShown)
     }
 
     @Test
@@ -73,17 +73,17 @@ class TabBarManagerTest {
     fun `tab constants are 0 1 2`() {
         assertEquals(0, TabBarManager.TAB_VOICE)
         assertEquals(1, TabBarManager.TAB_COMMAND)
-        assertEquals(2, TabBarManager.TAB_INPUT)
+        assertEquals(2, TabBarManager.TAB_TMUX)
     }
 
     @Test
     fun `sequential tab changes track correctly`() {
-        manager.selectTab(TabBarManager.TAB_INPUT)
+        manager.selectTab(TabBarManager.TAB_TMUX)
         manager.selectTab(TabBarManager.TAB_COMMAND)
         manager.selectTab(TabBarManager.TAB_VOICE)
         assertEquals(TabBarManager.TAB_VOICE, manager.currentTab)
         assertEquals(
-            listOf(TabBarManager.TAB_INPUT, TabBarManager.TAB_COMMAND, TabBarManager.TAB_VOICE),
+            listOf(TabBarManager.TAB_TMUX, TabBarManager.TAB_COMMAND, TabBarManager.TAB_VOICE),
             contentShown
         )
     }
