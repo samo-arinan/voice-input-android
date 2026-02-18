@@ -141,6 +141,39 @@ class AudioProcessorTest {
             processedRms > originalRms * 2)
     }
 
+    @Test
+    fun `isSilent returns true for digital silence`() {
+        val pcmData = ByteArray(32000) // all zeros
+        assertTrue(AudioProcessor.isSilent(pcmData))
+    }
+
+    @Test
+    fun `isSilent returns true for low ambient noise`() {
+        // RMS ≈ 100 (ambient noise level)
+        val samples = ShortArray(16000) { i ->
+            (100 * kotlin.math.sin(2.0 * Math.PI * 60.0 * i / 16000)).toInt().toShort()
+        }
+        val pcmData = ByteArray(samples.size * 2)
+        ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(samples)
+        assertTrue(AudioProcessor.isSilent(pcmData))
+    }
+
+    @Test
+    fun `isSilent returns false for speech level audio`() {
+        // RMS ≈ 2000 (speech)
+        val samples = ShortArray(16000) { i ->
+            (3000 * kotlin.math.sin(2.0 * Math.PI * 440.0 * i / 16000)).toInt().toShort()
+        }
+        val pcmData = ByteArray(samples.size * 2)
+        ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(samples)
+        assertFalse(AudioProcessor.isSilent(pcmData))
+    }
+
+    @Test
+    fun `isSilent returns true for empty data`() {
+        assertTrue(AudioProcessor.isSilent(ByteArray(0)))
+    }
+
     private fun calculateRms(pcmData: ByteArray): Double {
         val samples = ShortArray(pcmData.size / 2)
         ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)

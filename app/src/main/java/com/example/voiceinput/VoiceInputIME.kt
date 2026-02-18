@@ -400,6 +400,17 @@ class VoiceInputIME : InputMethodService() {
             }
 
             try {
+                // Skip silent audio to avoid Whisper hallucination
+                val wavBytes = audioFile.readBytes()
+                if (wavBytes.size > 44) {
+                    val pcm = wavBytes.copyOfRange(44, wavBytes.size)
+                    if (AudioProcessor.isSilent(pcm)) {
+                        audioFile.delete()
+                        statusText?.text = "音声が検出されませんでした"
+                        return@launch
+                    }
+                }
+
                 // Try command matching first
                 val matched = tryMatchCommand(audioFile)
                 if (matched) return@launch

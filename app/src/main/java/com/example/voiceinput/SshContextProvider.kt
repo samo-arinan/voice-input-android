@@ -32,7 +32,7 @@ class SshContextProvider(
             return "export PATH=\$PATH:/opt/homebrew/bin:/usr/local/bin; tmux capture-pane$target -p -S -80"
         }
         private const val CONNECT_TIMEOUT_MS = 3000
-        private const val WHISPER_CONTEXT_LINES = 20
+        private const val WHISPER_CONTEXT_LINES = 3
 
         fun parseOutput(raw: String): String? {
             val trimmed = raw.trimEnd('\n', ' ')
@@ -40,13 +40,7 @@ class SshContextProvider(
         }
 
         fun extractWhisperContext(text: String?): String? {
-            if (text == null) return null
-            val lines = text.split("\n")
-            return if (lines.size <= WHISPER_CONTEXT_LINES) {
-                text
-            } else {
-                lines.takeLast(WHISPER_CONTEXT_LINES).joinToString("\n")
-            }
+            return null
         }
 
         fun extractGptContext(text: String?): String? {

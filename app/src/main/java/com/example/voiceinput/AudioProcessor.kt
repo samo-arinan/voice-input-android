@@ -7,6 +7,17 @@ import java.nio.ByteOrder
 
 object AudioProcessor {
 
+    private const val SILENCE_RMS_THRESHOLD = 300.0
+
+    fun isSilent(pcmData: ByteArray): Boolean {
+        if (pcmData.isEmpty()) return true
+        val samples = ShortArray(pcmData.size / 2)
+        ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
+        val sumSquares = samples.sumOf { it.toDouble() * it.toDouble() }
+        val rms = kotlin.math.sqrt(sumSquares / samples.size)
+        return rms < SILENCE_RMS_THRESHOLD
+    }
+
     fun normalizeRms(pcmData: ByteArray, targetRmsDb: Double = -18.0): ByteArray {
         if (pcmData.isEmpty()) return pcmData
 

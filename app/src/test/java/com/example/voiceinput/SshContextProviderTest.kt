@@ -26,24 +26,8 @@ class SshContextProviderTest {
     }
 
     @Test
-    fun `extractWhisperContext returns last 20 lines`() {
-        val lines = (1..50).map { "line$it" }.joinToString("\n")
-        val result = SshContextProvider.extractWhisperContext(lines)
-        val resultLines = result!!.split("\n")
-        assertEquals(20, resultLines.size)
-        assertEquals("line31", resultLines.first())
-        assertEquals("line50", resultLines.last())
-    }
-
-    @Test
-    fun `extractWhisperContext returns all if under 20 lines`() {
-        val text = "line1\nline2\nline3"
-        val result = SshContextProvider.extractWhisperContext(text)
-        assertEquals(text, result)
-    }
-
-    @Test
-    fun `extractWhisperContext returns null for null input`() {
+    fun `extractWhisperContext always returns null`() {
+        assertNull(SshContextProvider.extractWhisperContext("some text"))
         assertNull(SshContextProvider.extractWhisperContext(null))
     }
 
