@@ -11,25 +11,6 @@
         android:orientation="vertical"
         android:background="#111418">
 
-        <!-- COMMAND MATRIX タイトル -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="COMMAND MATRIX"
-            android:textColor="#8B949E"
-            android:textSize="11sp"
-            android:letterSpacing="0.3"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="6dp" />
-
-        <!-- 区切り線 -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#2B323C" />
-
         <!-- 入力エリア -->
         <LinearLayout
             android:layout_width="match_parent"

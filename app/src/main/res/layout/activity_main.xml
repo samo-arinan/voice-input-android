@@ -192,7 +192,7 @@
             android:id="@+id/ntfySaveButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/ntfy_saved"
+            android:text="@string/ntfy_save"
             android:layout_marginTop="8dp" />
 
     </LinearLayout>
