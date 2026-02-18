@@ -5,7 +5,7 @@ data class VoiceCommand(
     val label: String,
     val text: String,
     val auto: Boolean = false,
-    val threshold: Float = 30.0f,
+    val threshold: Float = 15.0f,
     var sampleCount: Int = 0,
     val enabled: Boolean = true
 )

@@ -461,7 +461,7 @@ class VoiceInputIME : InputMethodService() {
     private suspend fun tryMatchCommand(audioFile: java.io.File): Boolean {
         val commands = commandRepo?.getCommands()
             ?.filter { it.enabled && it.sampleCount > 0 }
-            ?.map { if (it.threshold < 1f) it.copy(threshold = 30.0f) else it }
+            ?.map { it.copy(threshold = 15.0f) }
         if (commands.isNullOrEmpty()) return false
 
         val mfccSamples = withContext(Dispatchers.IO) {
