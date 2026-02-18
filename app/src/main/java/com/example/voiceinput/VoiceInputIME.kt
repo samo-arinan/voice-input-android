@@ -1,6 +1,7 @@
 package com.example.voiceinput
 
 import android.animation.ObjectAnimator
+import android.content.res.ColorStateList
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.view.ActionMode
@@ -15,8 +16,14 @@ import android.view.View
 import android.widget.*
 import java.io.File
 import kotlinx.coroutines.*
+import org.json.JSONObject
 
 class VoiceInputIME : InputMethodService() {
+
+    companion object {
+        const val COLOR_GREEN = 0xFF4ADE80.toInt()   // Notification (approval waiting)
+        const val COLOR_ORANGE = 0xFFFB923C.toInt()   // Stop (processing finished)
+    }
 
     private var processor: VoiceInputProcessor? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -327,17 +334,28 @@ class VoiceInputIME : InputMethodService() {
             getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
         ).getNtfyTopic()
         if (topic.isNotBlank()) {
-            ntfyListener = NtfyListener(topic, onNotification = { _ ->
+            ntfyListener = NtfyListener(topic, onNotification = { data ->
+                val color = parseNotificationColor(data)
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    showTmuxNotification()
+                    showTmuxNotification(color)
                 }
             })
             ntfyListener?.start()
         }
     }
 
-    private fun showTmuxNotification() {
+    private fun parseNotificationColor(data: String): Int {
+        return try {
+            val msg = JSONObject(data).optString("message", "")
+            if (msg.contains("finished")) COLOR_ORANGE else COLOR_GREEN
+        } catch (_: Exception) {
+            COLOR_GREEN
+        }
+    }
+
+    private fun showTmuxNotification(color: Int = COLOR_GREEN) {
         notificationDot?.visibility = View.VISIBLE
+        notificationDot?.backgroundTintList = ColorStateList.valueOf(color)
         notificationAnimator?.cancel()
         notificationAnimator = ObjectAnimator.ofFloat(notificationDot, "alpha", 0f, 1f).apply {
             duration = 500
