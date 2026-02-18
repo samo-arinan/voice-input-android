@@ -167,5 +167,33 @@
             android:layout_marginTop="4dp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
+        <!-- ntfy.sh Settings -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ntfy_settings_title"
+            android:textSize="18sp"
+            android:layout_marginTop="32dp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/ntfy_topic_hint"
+            android:layout_marginTop="8dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/ntfyTopicInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/ntfySaveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ntfy_saved"
+            android:layout_marginTop="8dp" />
+
     </LinearLayout>
 </ScrollView>

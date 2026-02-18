@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
 
         setupModelSpinner()
         setupSshSettings()
+        setupNtfySettings()
         requestMicrophonePermission()
     }
 
@@ -100,6 +101,18 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }.start()
+        }
+    }
+
+    private fun setupNtfySettings() {
+        val topicInput = findViewById<EditText>(R.id.ntfyTopicInput)
+        val saveButton = findViewById<Button>(R.id.ntfySaveButton)
+
+        prefsManager.getNtfyTopic().let { if (it.isNotEmpty()) topicInput.setText(it) }
+
+        saveButton.setOnClickListener {
+            prefsManager.saveNtfyTopic(topicInput.text.toString().trim())
+            Toast.makeText(this, R.string.ntfy_saved, Toast.LENGTH_SHORT).show()
         }
     }
 

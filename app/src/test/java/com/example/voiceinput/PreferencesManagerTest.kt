@@ -139,4 +139,19 @@ class PreferencesManagerTest {
         manager.saveSshContextEnabled(true)
         assertFalse(manager.isSshConfigured())
     }
+
+    @Test
+    fun `save and get ntfy topic`() {
+        every { sharedPreferences.getString("ntfy_topic", "") } returns "my-voice-input"
+        manager.saveNtfyTopic("my-voice-input")
+        verify { editor.putString("ntfy_topic", "my-voice-input") }
+        verify { editor.apply() }
+        assertEquals("my-voice-input", manager.getNtfyTopic())
+    }
+
+    @Test
+    fun `ntfy topic defaults to empty string`() {
+        every { sharedPreferences.getString("ntfy_topic", "") } returns ""
+        assertEquals("", manager.getNtfyTopic())
+    }
 }

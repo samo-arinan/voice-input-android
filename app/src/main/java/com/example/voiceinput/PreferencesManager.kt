@@ -14,6 +14,7 @@ class PreferencesManager(private val prefs: SharedPreferences) {
         private const val KEY_SSH_PRIVATE_KEY = "ssh_private_key"
         private const val KEY_SSH_CONTEXT_ENABLED = "ssh_context_enabled"
         private const val KEY_SSH_TMUX_SESSION = "ssh_tmux_session"
+        private const val KEY_NTFY_TOPIC = "ntfy_topic"
         const val DEFAULT_SSH_PORT = 22
     }
 
@@ -54,6 +55,9 @@ class PreferencesManager(private val prefs: SharedPreferences) {
 
     fun saveSshTmuxSession(session: String) { prefs.edit().putString(KEY_SSH_TMUX_SESSION, session).apply() }
     fun getSshTmuxSession(): String = prefs.getString(KEY_SSH_TMUX_SESSION, "") ?: ""
+
+    fun saveNtfyTopic(topic: String) { prefs.edit().putString(KEY_NTFY_TOPIC, topic).apply() }
+    fun getNtfyTopic(): String = prefs.getString(KEY_NTFY_TOPIC, "") ?: ""
 
     fun isSshConfigured(): Boolean {
         return isSshContextEnabled()

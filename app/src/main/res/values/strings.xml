@@ -24,4 +24,7 @@
     <string name="ssh_test_success">接続成功！</string>
     <string name="ssh_test_fail">接続失敗</string>
     <string name="ssh_saved">SSH設定を保存しました</string>
+    <string name="ntfy_settings_title">通知設定</string>
+    <string name="ntfy_topic_hint">ntfy.sh トピック名</string>
+    <string name="ntfy_saved">通知設定を保存しました</string>
 </resources>
