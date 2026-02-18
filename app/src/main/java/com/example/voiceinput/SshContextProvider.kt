@@ -31,6 +31,17 @@ class SshContextProvider(
             val target = if (tmuxSession.isBlank()) "" else " -t $tmuxSession"
             return "export PATH=\$PATH:/opt/homebrew/bin:/usr/local/bin; tmux capture-pane$target -p -S -80"
         }
+
+        fun buildSendKeysCommand(tmuxSession: String, key: String): String {
+            val target = if (tmuxSession.isBlank()) "" else " -t $tmuxSession"
+            return "export PATH=\$PATH:/opt/homebrew/bin:/usr/local/bin; tmux send-keys$target $key"
+        }
+
+        fun buildCaptureCommand(tmuxSession: String, lines: Int): String {
+            val target = if (tmuxSession.isBlank()) "" else " -t $tmuxSession"
+            return "export PATH=\$PATH:/opt/homebrew/bin:/usr/local/bin; tmux capture-pane$target -p -S -$lines"
+        }
+
         private const val CONNECT_TIMEOUT_MS = 3000
         private const val WHISPER_CONTEXT_LINES = 3
 
@@ -90,6 +101,26 @@ class SshContextProvider(
         session.connect(CONNECT_TIMEOUT_MS)
         cachedSession = session
         return session
+    }
+
+    fun sendKeys(key: String) {
+        val session = getOrCreateSession()
+        val channel = session.openChannel("exec") as ChannelExec
+        channel.setCommand(buildSendKeysCommand(tmuxSession, key))
+        channel.connect(CONNECT_TIMEOUT_MS)
+        channel.disconnect()
+    }
+
+    fun fetchLines(lines: Int): String? {
+        val session = getOrCreateSession()
+        val channel = session.openChannel("exec") as ChannelExec
+        channel.setCommand(buildCaptureCommand(tmuxSession, lines))
+        channel.inputStream.use { input ->
+            channel.connect(CONNECT_TIMEOUT_MS)
+            val output = input.bufferedReader().readText()
+            channel.disconnect()
+            return parseOutput(output)
+        }
     }
 
     fun disconnect() {
