@@ -2,6 +2,7 @@ package com.example.voiceinput
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 
 data class ServerEvent(
     val type: String,
@@ -56,57 +57,61 @@ object RealtimeEvent {
     }
 
     fun parseServerEvent(json: String): ServerEvent {
-        val obj = gson.fromJson(json, JsonObject::class.java)
-        val type = obj.get("type")?.asString ?: "unknown"
+        return try {
+            val obj = JsonParser.parseString(json).asJsonObject
+            val type = obj.get("type")?.asString ?: "unknown"
 
-        return when (type) {
-            "response.output_text.delta",
-            "conversation.item.input_audio_transcription.delta" -> {
-                ServerEvent(
-                    type = type,
-                    delta = obj.get("delta")?.asString
-                )
+            when (type) {
+                "response.output_text.delta",
+                "conversation.item.input_audio_transcription.delta" -> {
+                    ServerEvent(
+                        type = type,
+                        delta = obj.get("delta")?.asString
+                    )
+                }
+
+                "response.output_text.done" -> {
+                    ServerEvent(
+                        type = type,
+                        text = obj.get("text")?.asString
+                    )
+                }
+
+                "conversation.item.input_audio_transcription.completed" -> {
+                    ServerEvent(
+                        type = type,
+                        transcript = obj.get("transcript")?.asString
+                    )
+                }
+
+                "input_audio_buffer.speech_started" -> {
+                    ServerEvent(
+                        type = type,
+                        audioStartMs = obj.get("audio_start_ms")?.asInt
+                    )
+                }
+
+                "input_audio_buffer.speech_stopped" -> {
+                    ServerEvent(
+                        type = type,
+                        audioEndMs = obj.get("audio_end_ms")?.asInt
+                    )
+                }
+
+                "error" -> {
+                    val error = obj.getAsJsonObject("error")
+                    ServerEvent(
+                        type = type,
+                        errorType = error?.get("type")?.takeIf { !it.isJsonNull }?.asString,
+                        errorCode = error?.get("code")?.takeIf { !it.isJsonNull }?.asString,
+                        errorMessage = error?.get("message")?.takeIf { !it.isJsonNull }?.asString
+                    )
+                }
+
+                else -> ServerEvent(type = type)
             }
-
-            "response.output_text.done" -> {
-                ServerEvent(
-                    type = type,
-                    text = obj.get("text")?.asString
-                )
-            }
-
-            "conversation.item.input_audio_transcription.completed" -> {
-                ServerEvent(
-                    type = type,
-                    transcript = obj.get("transcript")?.asString
-                )
-            }
-
-            "input_audio_buffer.speech_started" -> {
-                ServerEvent(
-                    type = type,
-                    audioStartMs = obj.get("audio_start_ms")?.asInt
-                )
-            }
-
-            "input_audio_buffer.speech_stopped" -> {
-                ServerEvent(
-                    type = type,
-                    audioEndMs = obj.get("audio_end_ms")?.asInt
-                )
-            }
-
-            "error" -> {
-                val error = obj.getAsJsonObject("error")
-                ServerEvent(
-                    type = type,
-                    errorType = error?.get("type")?.asString,
-                    errorCode = if (error?.has("code") == true && !error.get("code").isJsonNull) error.get("code").asString else null,
-                    errorMessage = if (error?.has("message") == true && !error.get("message").isJsonNull) error.get("message").asString else null
-                )
-            }
-
-            else -> ServerEvent(type = type)
+        } catch (e: Exception) {
+            ServerEvent(type = "error", errorMessage = "Failed to parse: ${e.message}")
         }
     }
 }

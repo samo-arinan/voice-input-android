@@ -244,4 +244,11 @@ class RealtimeEventTest {
         assertNull(event.errorCode)
         assertNull(event.errorMessage)
     }
+
+    @Test
+    fun `parseServerEvent handles malformed json`() {
+        val event = RealtimeEvent.parseServerEvent("not json at all")
+        assertEquals("error", event.type)
+        assertNotNull(event.errorMessage)
+    }
 }
