@@ -27,13 +27,18 @@ class RealtimeClient(
     }
 
     private val gson = Gson()
+    @Volatile
     private var webSocket: WebSocket? = null
+    @Volatile
     private var instructions: String = ""
 
+    @Volatile
     var isConnected: Boolean = false
         private set
 
     fun connect(apiKey: String, model: String) {
+        webSocket?.close(1000, "Reconnecting")
+
         val request = Request.Builder()
             .url("wss://api.openai.com/v1/realtime?model=$model")
             .header("Authorization", "Bearer $apiKey")
@@ -53,17 +58,21 @@ class RealtimeClient(
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                val event = RealtimeEvent.parseServerEvent(text)
-                when (event.type) {
-                    "session.updated" -> listener.onSessionReady()
-                    "response.output_text.delta" -> listener.onTextDelta(event.delta ?: "")
-                    "response.output_text.done" -> listener.onTextDone(event.text ?: "")
-                    "input_audio_buffer.speech_started" -> listener.onSpeechStarted()
-                    "input_audio_buffer.speech_stopped" -> listener.onSpeechStopped()
-                    "conversation.item.input_audio_transcription.completed" ->
-                        listener.onTranscriptionCompleted(event.transcript ?: "")
-                    "response.done" -> listener.onResponseDone()
-                    "error" -> listener.onError(event.errorMessage ?: "Unknown error")
+                try {
+                    val event = RealtimeEvent.parseServerEvent(text)
+                    when (event.type) {
+                        "session.updated" -> listener.onSessionReady()
+                        "response.output_text.delta" -> listener.onTextDelta(event.delta ?: "")
+                        "response.output_text.done" -> listener.onTextDone(event.text ?: "")
+                        "input_audio_buffer.speech_started" -> listener.onSpeechStarted()
+                        "input_audio_buffer.speech_stopped" -> listener.onSpeechStopped()
+                        "conversation.item.input_audio_transcription.completed" ->
+                            listener.onTranscriptionCompleted(event.transcript ?: "")
+                        "response.done" -> listener.onResponseDone()
+                        "error" -> listener.onError(event.errorMessage ?: "Unknown error")
+                    }
+                } catch (e: Exception) {
+                    listener.onError("Failed to process message: ${e.message}")
                 }
             }
 
@@ -94,7 +103,9 @@ class RealtimeClient(
     }
 
     fun disconnect() {
-        webSocket?.close(1000, "Client disconnected")
+        val ws = webSocket
         webSocket = null
+        isConnected = false
+        ws?.close(1000, "Client disconnected")
     }
 }

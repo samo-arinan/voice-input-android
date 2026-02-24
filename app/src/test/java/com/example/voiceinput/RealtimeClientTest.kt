@@ -253,4 +253,48 @@ class RealtimeClientTest {
         assertFalse(client.isConnected)
         verify { listener.onError("Connection lost") }
     }
+
+    // --- onMessage exception handling ---
+
+    @Test
+    fun `onMessage with malformed JSON calls listener onError instead of crashing`() {
+        client.connect("sk-test-key", "gpt-4o-realtime-preview")
+        val wsListener = capturedListener.captured
+
+        val malformedJson = "not valid json {{{{"
+        wsListener.onMessage(mockWebSocket, malformedJson)
+
+        verify { listener.onError(match { it.contains("Failed to parse") }) }
+    }
+
+    // --- connect closes existing WebSocket ---
+
+    @Test
+    fun `connect closes existing WebSocket before creating new one`() {
+        client.connect("sk-test-key", "gpt-4o-realtime-preview")
+        capturedListener.captured.onOpen(mockWebSocket, mockk(relaxed = true))
+
+        val mockWebSocket2: WebSocket = mockk(relaxed = true)
+        val capturedListener2 = slot<WebSocketListener>()
+        every {
+            mockOkHttpClient.newWebSocket(any(), capture(capturedListener2))
+        } returns mockWebSocket2
+
+        client.connect("sk-test-key", "gpt-4o-realtime-preview")
+
+        verify { mockWebSocket.close(1000, "Reconnecting") }
+    }
+
+    // --- disconnect sets isConnected to false ---
+
+    @Test
+    fun `disconnect sets isConnected to false`() {
+        client.connect("sk-test-key", "gpt-4o-realtime-preview")
+        capturedListener.captured.onOpen(mockWebSocket, mockk(relaxed = true))
+        assertTrue(client.isConnected)
+
+        client.disconnect()
+
+        assertFalse(client.isConnected)
+    }
 }
