@@ -154,4 +154,21 @@ class PreferencesManagerTest {
         every { sharedPreferences.getString("ntfy_topic", "") } returns ""
         assertEquals("", manager.getNtfyTopic())
     }
+
+    // Realtime model tests
+
+    @Test
+    fun `realtime model default is gpt-4o-realtime-preview`() {
+        every { sharedPreferences.getString("realtime_model", "gpt-4o-realtime-preview") } returns "gpt-4o-realtime-preview"
+        assertEquals("gpt-4o-realtime-preview", manager.getRealtimeModel())
+    }
+
+    @Test
+    fun `realtime model save and get`() {
+        every { sharedPreferences.getString("realtime_model", "gpt-4o-realtime-preview") } returns "gpt-4o-mini-realtime-preview"
+        manager.saveRealtimeModel("gpt-4o-mini-realtime-preview")
+        verify { editor.putString("realtime_model", "gpt-4o-mini-realtime-preview") }
+        verify { editor.apply() }
+        assertEquals("gpt-4o-mini-realtime-preview", manager.getRealtimeModel())
+    }
 }

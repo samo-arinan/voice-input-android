@@ -15,6 +15,8 @@ class PreferencesManager(private val prefs: SharedPreferences) {
         private const val KEY_SSH_CONTEXT_ENABLED = "ssh_context_enabled"
         private const val KEY_SSH_TMUX_SESSION = "ssh_tmux_session"
         private const val KEY_NTFY_TOPIC = "ntfy_topic"
+        private const val KEY_REALTIME_MODEL = "realtime_model"
+        const val DEFAULT_REALTIME_MODEL = "gpt-4o-realtime-preview"
         const val DEFAULT_SSH_PORT = 22
     }
 
@@ -58,6 +60,14 @@ class PreferencesManager(private val prefs: SharedPreferences) {
 
     fun saveNtfyTopic(topic: String) { prefs.edit().putString(KEY_NTFY_TOPIC, topic).apply() }
     fun getNtfyTopic(): String = prefs.getString(KEY_NTFY_TOPIC, "") ?: ""
+
+    fun saveRealtimeModel(model: String) {
+        prefs.edit().putString(KEY_REALTIME_MODEL, model).apply()
+    }
+
+    fun getRealtimeModel(): String {
+        return prefs.getString(KEY_REALTIME_MODEL, DEFAULT_REALTIME_MODEL) ?: DEFAULT_REALTIME_MODEL
+    }
 
     fun isSshConfigured(): Boolean {
         return isSshContextEnabled()
