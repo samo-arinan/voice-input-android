@@ -30,7 +30,7 @@ object RealtimeEvent {
             "type" to "session.update",
             "session" to mapOf(
                 "instructions" to instructions,
-                "output_modalities" to listOf("text"),
+                "modalities" to listOf("text"),
                 "turn_detection" to mapOf(
                     "type" to "server_vad",
                     "threshold" to vadThreshold,
@@ -63,6 +63,7 @@ object RealtimeEvent {
 
             when (type) {
                 "response.output_text.delta",
+                "response.text.delta",
                 "conversation.item.input_audio_transcription.delta" -> {
                     ServerEvent(
                         type = type,
@@ -70,7 +71,8 @@ object RealtimeEvent {
                     )
                 }
 
-                "response.output_text.done" -> {
+                "response.output_text.done",
+                "response.text.done" -> {
                     ServerEvent(
                         type = type,
                         text = obj.get("text")?.asString

@@ -92,8 +92,16 @@ class RealtimeAudioStreamer(
         }
     }
 
+    /**
+     * Immediately stop the recording loop without blocking.
+     * Safe to call from any thread (e.g. WebSocket callback thread).
+     */
+    fun pauseStreaming() {
+        isStreaming = false
+    }
+
     fun stop() {
-        if (!isStreaming) return
+        if (!isStreaming && recordingThread == null) return
         isStreaming = false
 
         recordingThread?.join(2000)

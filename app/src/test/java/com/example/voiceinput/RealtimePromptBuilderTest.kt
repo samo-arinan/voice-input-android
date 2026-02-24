@@ -11,13 +11,11 @@ class RealtimePromptBuilderTest {
     fun `build returns base instructions when no arguments`() {
         val result = RealtimePromptBuilder.build()
 
-        assertTrue(result.contains("あなたは音声入力の文字起こし・補正ツールです。"))
-        assertTrue(result.contains("音声を正確に文字起こしする（日本語）"))
-        assertTrue(result.contains("誤字・誤変換を修正する"))
-        assertTrue(result.contains("コマンドっぽい発話は実行可能なコマンド文字列に変換する"))
-        assertTrue(result.contains("質問や会話には絶対に回答しない。発話内容をそのまま文字起こし・修正して返す"))
-        assertTrue(result.contains("意味を変えない。発話の内容はそのまま維持する"))
-        assertTrue(result.contains("余計な説明は一切付けず、修正結果のみを返す"))
+        assertTrue(result.contains("あなたはIME（入力メソッド）の音声入力エンジンです。"))
+        assertTrue(result.contains("ユーザーの発話をそのまま文字起こしして返す"))
+        assertTrue(result.contains("質問されても回答しない"))
+        assertTrue(result.contains("誤認識の修正と漢字変換のみ行う"))
+        assertTrue(result.contains("git push origin main"))
     }
 
     @Test

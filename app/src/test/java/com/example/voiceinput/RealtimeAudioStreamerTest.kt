@@ -38,4 +38,12 @@ class RealtimeAudioStreamerTest {
         val streamer = RealtimeAudioStreamer(onChunk = {})
         assertFalse(streamer.isStreaming)
     }
+
+    @Test
+    fun `pauseStreaming sets isStreaming to false`() {
+        val streamer = RealtimeAudioStreamer(onChunk = {})
+        // Can't call start() in unit test (no AudioRecord), but pauseStreaming should be safe
+        streamer.pauseStreaming()
+        assertFalse(streamer.isStreaming)
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.voiceinput
 
+import android.util.Log
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,6 +27,10 @@ class RealtimeClient(
         fun onSessionReady()
     }
 
+    companion object {
+        private const val TAG = "RealtimeClient"
+    }
+
     private val gson = Gson()
     @Volatile
     private var webSocket: WebSocket? = null
@@ -47,23 +52,32 @@ class RealtimeClient(
 
         webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.d(TAG, "WebSocket opened")
                 isConnected = true
                 val sessionUpdate = RealtimeEvent.sessionUpdate(
                     instructions = instructions,
                     vadThreshold = 0.5f,
-                    silenceDurationMs = 500,
+                    silenceDurationMs = 1200,
                     transcriptionModel = "whisper-1"
                 )
-                webSocket.send(gson.toJson(sessionUpdate))
+                val json = gson.toJson(sessionUpdate)
+                Log.d(TAG, "Sending session.update: ${json.take(200)}")
+                webSocket.send(json)
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
                 try {
                     val event = RealtimeEvent.parseServerEvent(text)
+                    Log.d(TAG, "Event: ${event.type}" +
+                        (event.delta?.let { " delta=${it.take(50)}" } ?: "") +
+                        (event.text?.let { " text=${it.take(50)}" } ?: "") +
+                        (event.errorMessage?.let { " err=$it" } ?: ""))
                     when (event.type) {
                         "session.updated" -> listener.onSessionReady()
-                        "response.output_text.delta" -> listener.onTextDelta(event.delta ?: "")
-                        "response.output_text.done" -> listener.onTextDone(event.text ?: "")
+                        "response.output_text.delta",
+                        "response.text.delta" -> listener.onTextDelta(event.delta ?: "")
+                        "response.output_text.done",
+                        "response.text.done" -> listener.onTextDone(event.text ?: "")
                         "input_audio_buffer.speech_started" -> listener.onSpeechStarted()
                         "input_audio_buffer.speech_stopped" -> listener.onSpeechStopped()
                         "conversation.item.input_audio_transcription.completed" ->
@@ -72,16 +86,19 @@ class RealtimeClient(
                         "error" -> listener.onError(event.errorMessage ?: "Unknown error")
                     }
                 } catch (e: Exception) {
+                    Log.e(TAG, "Failed to process message", e)
                     listener.onError("Failed to process message: ${e.message}")
                 }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Log.e(TAG, "WebSocket failure: ${t.message}", t)
                 isConnected = false
                 listener.onError(t.message ?: "Unknown error")
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WebSocket closed: code=$code reason=$reason")
                 isConnected = false
             }
         })

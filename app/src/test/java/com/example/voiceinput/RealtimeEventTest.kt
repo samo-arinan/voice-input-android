@@ -22,7 +22,7 @@ class RealtimeEventTest {
     }
 
     @Test
-    fun `sessionUpdate sets output_modalities to text only`() {
+    fun `sessionUpdate sets modalities to text only`() {
         val event = RealtimeEvent.sessionUpdate(
             instructions = "test",
             vadThreshold = 0.5f,
@@ -31,7 +31,7 @@ class RealtimeEventTest {
         )
         @Suppress("UNCHECKED_CAST")
         val session = event["session"] as Map<String, Any>
-        assertEquals(listOf("text"), session["output_modalities"])
+        assertEquals(listOf("text"), session["modalities"])
     }
 
     @Test
@@ -89,7 +89,7 @@ class RealtimeEventTest {
         )
         val json = gson.toJson(event)
         assertTrue(json.contains("\"type\":\"session.update\""))
-        assertTrue(json.contains("\"output_modalities\":[\"text\"]"))
+        assertTrue(json.contains("\"modalities\":[\"text\"]"))
     }
 
     // --- audioAppend ---
@@ -209,6 +209,22 @@ class RealtimeEventTest {
         assertEquals("invalid_request_error", event.errorType)
         assertEquals("invalid_value", event.errorCode)
         assertEquals("Invalid session config", event.errorMessage)
+    }
+
+    @Test
+    fun `parseServerEvent extracts delta from beta response text delta`() {
+        val json = """{"type":"response.text.delta","delta":"Hi"}"""
+        val event = RealtimeEvent.parseServerEvent(json)
+        assertEquals("response.text.delta", event.type)
+        assertEquals("Hi", event.delta)
+    }
+
+    @Test
+    fun `parseServerEvent extracts text from beta response text done`() {
+        val json = """{"type":"response.text.done","text":"Hello there"}"""
+        val event = RealtimeEvent.parseServerEvent(json)
+        assertEquals("response.text.done", event.type)
+        assertEquals("Hello there", event.text)
     }
 
     @Test
