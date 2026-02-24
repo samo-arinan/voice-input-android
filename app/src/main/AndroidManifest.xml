@@ -3,7 +3,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <application
         android:allowBackup="true"
@@ -31,11 +30,6 @@
                 android:name="android.view.im"
                 android:resource="@xml/ime_config" />
         </service>
-
-        <activity
-            android:name=".poc.TeethClickPocActivity"
-            android:exported="false"
-            android:label="Teeth Click PoC" />
     </application>
 
 </manifest>
