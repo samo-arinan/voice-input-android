@@ -1,6 +1,6 @@
 package com.example.voiceinput.poc
 
-class RmsGraphBuffer(private val maxEntries: Int = 300) {
+class RmsGraphBuffer(val maxEntries: Int = 300) {
 
     data class RmsEntry(val rms: Double, val isPeak: Boolean, val timestamp: Long)
 

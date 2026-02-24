@@ -51,10 +51,9 @@ class RmsGraphView @JvmOverloads constructor(
         val entryList = buffer.entries()
         if (entryList.isEmpty()) return
 
-        val maxEntries = 300
         val maxRms = buffer.maxRms()
         val path = Path()
-        val stepX = w / maxEntries
+        val stepX = w / buffer.maxEntries
 
         for (i in entryList.indices) {
             val x = i * stepX

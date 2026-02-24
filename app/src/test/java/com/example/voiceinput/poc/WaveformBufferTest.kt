@@ -3,7 +3,7 @@ package com.example.voiceinput.poc
 import org.junit.Assert.*
 import org.junit.Test
 
-class WaveformViewTest {
+class WaveformBufferTest {
 
     @Test
     fun `pushSamples stores samples in ring buffer`() {

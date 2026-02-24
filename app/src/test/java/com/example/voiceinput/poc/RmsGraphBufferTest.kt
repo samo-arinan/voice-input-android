@@ -3,7 +3,7 @@ package com.example.voiceinput.poc
 import org.junit.Assert.*
 import org.junit.Test
 
-class RmsGraphViewTest {
+class RmsGraphBufferTest {
 
     @Test
     fun `new buffer is empty`() {
