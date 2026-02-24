@@ -50,6 +50,10 @@ class MainActivity : AppCompatActivity() {
         setupSshSettings()
         setupNtfySettings()
         requestMicrophonePermission()
+
+        findViewById<Button>(R.id.teethClickPocButton).setOnClickListener {
+            startActivity(Intent(this, com.example.voiceinput.poc.TeethClickPocActivity::class.java))
+        }
     }
 
     private fun setupSshSettings() {

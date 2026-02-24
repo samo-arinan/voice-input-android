@@ -195,5 +195,22 @@
             android:text="@string/ntfy_save"
             android:layout_marginTop="8dp" />
 
+        <!-- Teeth Click PoC -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="実験"
+            android:textSize="18sp"
+            android:layout_marginTop="32dp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/teethClickPocButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="歯カチカチ検出 PoC"
+            android:layout_marginTop="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
     </LinearLayout>
 </ScrollView>
