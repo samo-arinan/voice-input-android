@@ -17,6 +17,12 @@ class VoiceInputIME : InputMethodService() {
     companion object {
         const val COLOR_GREEN = 0xFF4ADE80.toInt()   // Notification (approval waiting)
         const val COLOR_ORANGE = 0xFFFB923C.toInt()   // Stop (processing finished)
+
+        private val realtimeHttpClient: okhttp3.OkHttpClient by lazy {
+            okhttp3.OkHttpClient.Builder()
+                .readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .build()
+        }
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -314,6 +320,7 @@ class VoiceInputIME : InputMethodService() {
     // --- Realtime API methods ---
 
     private fun startRealtimeRecording() {
+        if (realtimeClient != null) return  // still processing previous response
         val prefs = PreferencesManager(getSharedPreferences("voice_input_prefs", MODE_PRIVATE))
         val apiKey = prefs.getApiKey()
         if (apiKey.isNullOrBlank()) {
@@ -348,9 +355,7 @@ class VoiceInputIME : InputMethodService() {
         }
 
         val client = RealtimeClient(
-            okhttp3.OkHttpClient.Builder()
-                .readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS)
-                .build(),
+            realtimeHttpClient,
             object : RealtimeClient.Listener {
                 override fun onSessionReady() {
                     mainHandler.post {
@@ -471,6 +476,7 @@ class VoiceInputIME : InputMethodService() {
         realtimeClient?.disconnect()
         realtimeClient = null
         isRealtimeRecording = false
+        currentInputConnection?.finishComposingText()
         composingText.clear()
         stopAmplitudePolling()
         rippleView?.setState(RippleState.IDLE)
