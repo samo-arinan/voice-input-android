@@ -25,7 +25,7 @@ implementation("androidx.viewpager2:viewpager2:1.1.0")
 
 **Step 2: ビルド確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew app:dependencies --configuration releaseRuntimeClasspath | grep viewpager`
+Run: `./gradlew app:dependencies --configuration releaseRuntimeClasspath | grep viewpager`
 Expected: viewpager2が解決されていること
 
 **Step 3: コミット**
@@ -71,7 +71,7 @@ class IMEModePagerAdapterTest {
 
 **Step 2: テスト実行 → 失敗確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.IMEModePagerAdapterTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.IMEModePagerAdapterTest" 2>&1 | tail -20`
 Expected: FAIL (クラスが存在しない)
 
 **Step 3: コミット**
@@ -133,7 +133,7 @@ class IMEModePagerAdapter : RecyclerView.Adapter<IMEModePagerAdapter.PageViewHol
 
 **Step 2: テスト実行 → 成功確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.IMEModePagerAdapterTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.IMEModePagerAdapterTest" 2>&1 | tail -20`
 Expected: PASS（定数テストのみ。レイアウト依存のメソッドはAndroidフレームワーク依存なのでユニットテスト不可）
 
 **Step 3: コミット**
@@ -251,7 +251,7 @@ fun `detectFlickDirection at boundary plus one returns directional`() {
 
 **Step 2: テスト実行 → 成功確認**（既存ロジックのテスト）
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 3: FlickKeyboardViewにrequestDisallowInterceptTouchEvent追加**
@@ -287,7 +287,7 @@ setOnTouchListener { v, event ->
 
 **Step 4: テスト実行 → 成功維持**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: コミット**
@@ -334,7 +334,7 @@ VoiceInputIME.ktの `flickKeyboard?.listener` 設定内の `onSwitchToVoice()` �
 
 **Step 4: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 5: コミット**
@@ -587,7 +587,7 @@ private fun updateIndicator(position: Int) {
 
 **Step 7: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 8: コミット**
@@ -605,17 +605,17 @@ git commit -m "feat: connect VoiceInputIME to ViewPager2 for vertical mode switc
 
 **Step 1: 全テスト実行**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: ALL PASS
 
 **Step 2: APKビルド**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: APKを同期先にコピー**
 
-Run: `cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
+Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 ---
 
@@ -656,13 +656,13 @@ modePager?.post {
 
 **Step 2: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 3: APKビルド & 同期**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
-Run: `cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
+Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 **Step 4: コミット**
 

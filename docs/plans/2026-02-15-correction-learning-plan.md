@@ -124,7 +124,7 @@ class CorrectionRepositoryTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.CorrectionRepositoryTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.CorrectionRepositoryTest" 2>&1 | tail -20`
 Expected: FAIL — classes not found
 
 **Step 3: Write CorrectionEntry data class**
@@ -197,13 +197,13 @@ class CorrectionRepository(
 
 **Step 5: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.CorrectionRepositoryTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.CorrectionRepositoryTest" 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 6: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/CorrectionEntry.kt \
         app/src/main/java/com/example/voiceinput/CorrectionRepository.kt \
         app/src/test/java/com/example/voiceinput/CorrectionRepositoryTest.kt
@@ -275,7 +275,7 @@ fun `convertWithHistory returns original on API error`() {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest.convertWithHistory includes correction history in system prompt" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest.convertWithHistory includes correction history in system prompt" 2>&1 | tail -20`
 Expected: FAIL — method not found
 
 **Step 3: Implement convertWithHistory in GptConverter.kt**
@@ -303,13 +303,13 @@ fun convertWithHistory(rawText: String, corrections: List<CorrectionEntry>): Str
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest" 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/GptConverter.kt \
         app/src/test/java/com/example/voiceinput/GptConverterTest.kt
 git commit -m "feat: add convertWithHistory to GptConverter for correction-aware processing"
@@ -361,7 +361,7 @@ fun `convertHiraganaToKanji returns empty list on error`() {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest.convertHiraganaToKanji returns kanji candidates" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest.convertHiraganaToKanji returns kanji candidates" 2>&1 | tail -20`
 Expected: FAIL — method not found
 
 **Step 3: Implement convertHiraganaToKanji in GptConverter.kt**
@@ -392,13 +392,13 @@ fun convertHiraganaToKanji(hiragana: String): List<String> {
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.GptConverterTest" 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/GptConverter.kt \
         app/src/test/java/com/example/voiceinput/GptConverterTest.kt
 git commit -m "feat: add convertHiraganaToKanji for flick input kanji conversion"
@@ -452,7 +452,7 @@ fun `stopAndProcess with null corrections uses convert`() = runTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest.stopAndProcess uses convertWithHistory when corrections provided" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest.stopAndProcess uses convertWithHistory when corrections provided" 2>&1 | tail -20`
 Expected: FAIL — no matching `corrections` parameter
 
 **Step 3: Modify stopAndProcess in VoiceInputProcessor.kt**
@@ -488,13 +488,13 @@ suspend fun stopAndProcess(
 
 **Step 4: Run ALL tests to verify nothing is broken**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" 2>&1 | tail -20`
 Expected: ALL PASS (existing tests still pass because `corrections` defaults to null)
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/VoiceInputProcessor.kt \
         app/src/test/java/com/example/voiceinput/VoiceInputProcessorTest.kt
 git commit -m "feat: pass correction history through VoiceInputProcessor to GptConverter"
@@ -627,7 +627,7 @@ class FlickKeyboardViewTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
 Expected: FAIL — classes not found
 
 **Step 3: Write FlickResolver (pure logic, no Android dependency)**
@@ -780,13 +780,13 @@ class FlickKeyboardView @JvmOverloads constructor(
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.FlickKeyboardViewTest" 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/FlickKeyboardView.kt \
         app/src/test/java/com/example/voiceinput/FlickKeyboardViewTest.kt
 git commit -m "feat: add FlickResolver and FlickKeyboardView for kana input"
@@ -903,13 +903,13 @@ Replace the full `ime_voice_input.xml` content:
 
 **Step 2: Verify build compiles**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/res/layout/ime_voice_input.xml
 git commit -m "feat: add keyboard toggle button and FlickKeyboardView to IME layout"
 ```
@@ -1095,18 +1095,18 @@ import java.io.File
 
 **Step 7: Verify build compiles**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 8: Run all existing tests to verify nothing broken**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 9: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/VoiceInputIME.kt
 git commit -m "feat: integrate flick keyboard, correction history, and auto-learning into IME"
 ```
@@ -1117,18 +1117,18 @@ git commit -m "feat: integrate flick keyboard, correction history, and auto-lear
 
 **Step 1: Run all unit tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: ALL PASS
 
 **Step 2: Build release APK**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Copy APK to sync folder**
 
 ```bash
-cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk
+cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk
 ```
 
 **Step 4: Verify APK exists**

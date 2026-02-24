@@ -4,14 +4,8 @@ import android.animation.ObjectAnimator
 import android.content.res.ColorStateList
 import android.inputmethodservice.InputMethodService
 import android.os.Build
-import android.view.ActionMode
-import android.view.GestureDetector
 import android.view.HapticFeedbackConstants
-import android.view.KeyEvent
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.MotionEvent
 import android.view.View
 import android.widget.*
 import java.io.File
@@ -21,34 +15,47 @@ import org.json.JSONObject
 class VoiceInputIME : InputMethodService() {
 
     companion object {
-        const val COLOR_GREEN = 0xFF4ADE80.toInt()   // Notification (approval waiting)
-        const val COLOR_ORANGE = 0xFFFB923C.toInt()   // Stop (processing finished)
+        const val COLOR_GREEN = 0xFF4ADE80.toInt()
+        const val COLOR_ORANGE = 0xFFFB923C.toInt()
+
+        private val realtimeHttpClient: okhttp3.OkHttpClient by lazy {
+            okhttp3.OkHttpClient.Builder()
+                .readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .build()
+        }
     }
 
-    private var processor: VoiceInputProcessor? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var statusText: TextView? = null
-    private var candidateArea: LinearLayout? = null
-    private var candidateText: TextView? = null
-    private var candidateButton: Button? = null
-    private var committedTextLength = 0
-    private var currentFullText: String? = null
-    private var replacementRange: Pair<Int, Int>? = null
-    private var isToggleRecording = false
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val undoManager = UndoManager()
+
+    // INPUT tab
+    private lateinit var inputController: RealtimeInputController
+    private var rippleView: RippleAnimationView? = null
+    private var undoStrip: View? = null
+    private var undoPreviewText: TextView? = null
+    private var undoButton: TextView? = null
+    private var undoDismissRunnable: Runnable? = null
+    private var amplitudePoller: java.util.Timer? = null
     private var voiceModeArea: LinearLayout? = null
-    private var tmuxView: TmuxView? = null
-    private var correctionRepo: CorrectionRepository? = null
+
+    // COMMAND tab
     private var commandLearning: CommandLearningView? = null
     private var sampleRecorder: AudioRecorder? = null
     private var recordingCommandId: String? = null
     private var recordingSampleIndex: Int = 0
     private var commandRepo: VoiceCommandRepository? = null
+
+    // TMUX tab
+    private var tmuxView: TmuxView? = null
     private var contentFrame: FrameLayout? = null
     private var sshContextProvider: SshContextProvider? = null
     private var ntfyListener: NtfyListener? = null
     private var notificationDot: View? = null
     private var notificationAnimator: ObjectAnimator? = null
+    private var correctionRepo: CorrectionRepository? = null
 
+    // Tab bar
     private var tabVoice: TextView? = null
     private var tabCommand: TextView? = null
     private var tabInput: TextView? = null
@@ -57,49 +64,144 @@ class VoiceInputIME : InputMethodService() {
     override fun onCreateInputView(): View {
         val view = LayoutInflater.from(this).inflate(R.layout.ime_voice_input, null)
 
-        refreshProcessor()
+        refreshSshProvider()
+        setupInputController()
+        setupInputTab(view)
+        setupCommandTab(view)
+        setupTmuxTab(view)
+        setupTabBar(view)
+        refreshNtfyListener()
 
-        statusText = view.findViewById(R.id.imeStatusText)
-        candidateArea = view.findViewById(R.id.candidateArea)
-        candidateText = view.findViewById(R.id.candidateText)
-        candidateButton = view.findViewById(R.id.candidateButton)
-        candidateButton?.setOnClickListener { onCandidateButtonTap() }
+        return view
+    }
 
-        voiceModeArea = view.findViewById(R.id.voiceModeArea)
-        tmuxView = view.findViewById(R.id.tmuxView)
-        contentFrame = view.findViewById(R.id.contentFrame)
+    // --- INPUT tab setup ---
 
-        tmuxView?.listener = object : TmuxViewListener {
-            override fun onSendKeys(key: String) {
-                serviceScope.launch(Dispatchers.IO) {
-                    try {
-                        sshContextProvider?.sendKeys(key)
-                        delay(100)
-                        val text = sshContextProvider?.fetchLines(20)
-                        withContext(Dispatchers.Main) {
-                            tmuxView?.updateOutput(text)
-                        }
-                    } catch (e: Exception) {
-                        // Silently ignore SSH errors
+    private fun setupInputController() {
+        inputController = RealtimeInputController(
+            httpClient = realtimeHttpClient,
+            postToMain = { mainHandler.post(it) }
+        )
+        inputController.callback = object : RealtimeInputController.Callback {
+            override fun onStateChanged(state: RealtimeInputController.State) {
+                when (state) {
+                    RealtimeInputController.State.IDLE -> {
+                        rippleView?.setState(RippleState.IDLE)
+                        stopAmplitudePolling()
+                    }
+                    RealtimeInputController.State.CONNECTING -> {
+                        rippleView?.setState(RippleState.PROCESSING)
+                    }
+                    RealtimeInputController.State.RECORDING -> {
+                        rippleView?.setState(RippleState.RECORDING)
+                        startAmplitudePolling()
+                    }
+                    RealtimeInputController.State.PROCESSING -> {
+                        rippleView?.setState(RippleState.PROCESSING)
+                        stopAmplitudePolling()
                     }
                 }
             }
 
-            override fun onRequestRefresh(callback: (String?) -> Unit) {
-                serviceScope.launch(Dispatchers.IO) {
-                    val text = try {
-                        sshContextProvider?.fetchLines(20)
-                    } catch (e: Exception) {
-                        null
-                    }
-                    withContext(Dispatchers.Main) {
-                        callback(text)
-                    }
-                }
+            override fun onComposingText(text: String) {
+                currentInputConnection?.setComposingText(text, 1)
+            }
+
+            override fun onCommitText(text: String) {
+                currentInputConnection?.commitText(text, 1)
+                undoManager.recordCommit(text, text.length)
+                showUndoStrip(text)
+            }
+
+            override fun onError(message: String) {
+                currentInputConnection?.finishComposingText()
+                Toast.makeText(this@VoiceInputIME, "エラー: $message", Toast.LENGTH_SHORT).show()
             }
         }
+    }
 
-        // Initialize correction repository
+    private fun setupInputTab(view: View) {
+        rippleView = view.findViewById(R.id.rippleView)
+        undoStrip = view.findViewById(R.id.undoStrip)
+        undoPreviewText = view.findViewById(R.id.undoPreviewText)
+        undoButton = view.findViewById(R.id.undoButton)
+        undoButton?.setOnClickListener { performUndo() }
+        voiceModeArea = view.findViewById(R.id.voiceModeArea)
+
+        rippleView?.setOnClickListener {
+            when (inputController.state) {
+                RealtimeInputController.State.IDLE -> startInput()
+                RealtimeInputController.State.RECORDING -> inputController.stop()
+                else -> {} // CONNECTING or PROCESSING - ignore
+            }
+        }
+    }
+
+    private fun startInput() {
+        val prefs = PreferencesManager(getSharedPreferences("voice_input_prefs", MODE_PRIVATE))
+        val apiKey = prefs.getApiKey()
+        if (apiKey.isNullOrBlank()) {
+            Toast.makeText(this, "APIキーが設定されていません", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        undoManager.clear()
+        hideUndoStrip()
+
+        serviceScope.launch {
+            val tmuxContext = withContext(Dispatchers.IO) {
+                try { sshContextProvider?.fetchContext() } catch (_: Exception) { null }
+            }
+            val gptContext = SshContextProvider.extractGptContext(tmuxContext)
+            val corrections = correctionRepo?.getTopCorrections(20)
+            val instructions = RealtimePromptBuilder.build(
+                corrections = corrections,
+                terminalContext = gptContext
+            )
+            inputController.start(apiKey, prefs.getRealtimeModel(), instructions)
+        }
+    }
+
+    private fun startAmplitudePolling() {
+        amplitudePoller = java.util.Timer().apply {
+            scheduleAtFixedRate(object : java.util.TimerTask() {
+                override fun run() {
+                    val rms = inputController.amplitude
+                    mainHandler.post { rippleView?.setAmplitude(rms) }
+                }
+            }, 0, 50)
+        }
+    }
+
+    private fun stopAmplitudePolling() {
+        amplitudePoller?.cancel()
+        amplitudePoller = null
+    }
+
+    private fun performUndo() {
+        val length = undoManager.undo()
+        if (length > 0) {
+            currentInputConnection?.deleteSurroundingText(length, 0)
+            hideUndoStrip()
+        }
+    }
+
+    private fun showUndoStrip(text: String) {
+        undoPreviewText?.text = text
+        undoStrip?.visibility = View.VISIBLE
+        undoDismissRunnable?.let { mainHandler.removeCallbacks(it) }
+        undoDismissRunnable = Runnable { hideUndoStrip() }
+        mainHandler.postDelayed(undoDismissRunnable!!, 5000)
+    }
+
+    private fun hideUndoStrip() {
+        undoStrip?.visibility = View.GONE
+        undoDismissRunnable?.let { mainHandler.removeCallbacks(it) }
+    }
+
+    // --- COMMAND tab ---
+
+    private fun setupCommandTab(view: View) {
         val correctionsFile = File(filesDir, "corrections.json")
         correctionRepo = CorrectionRepository(correctionsFile)
 
@@ -118,20 +220,79 @@ class VoiceInputIME : InputMethodService() {
                 commandLearning?.refreshCommandList()
             }
         }
+    }
 
-        val noopActionModeCallback = object : ActionMode.Callback {
-            override fun onCreateActionMode(mode: ActionMode?, menu: Menu?) = true
-            override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-                menu?.clear()
-                return true
+    private fun recordCommandSample(commandId: String, sampleIndex: Int) {
+        if (sampleIndex >= 5) return
+
+        if (sampleRecorder?.isRecording == true) {
+            val wavFile = sampleRecorder?.stop() ?: return
+            val targetFile = commandRepo?.getSampleFile(commandId, sampleIndex)
+            if (targetFile != null) {
+                wavFile.copyTo(targetFile, overwrite = true)
+                try {
+                    val mfcc = MfccExtractor.extract(targetFile.readBytes())
+                    commandRepo?.saveMfccCache(commandId, sampleIndex, mfcc)
+                } catch (_: Exception) {}
+                wavFile.delete()
+                commandRepo?.updateSampleCount(commandId, sampleIndex + 1)
+                commandLearning?.refreshCommandList()
             }
-            override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?) = false
-            override fun onDestroyActionMode(mode: ActionMode?) {}
+            sampleRecorder = null
+            recordingCommandId = null
+            return
         }
-        candidateText?.customSelectionActionModeCallback = noopActionModeCallback
-        candidateText?.customInsertionActionModeCallback = noopActionModeCallback
 
-        // Setup tab bar
+        sampleRecorder = AudioRecorder(cacheDir)
+        recordingCommandId = commandId
+        recordingSampleIndex = sampleIndex
+        val started = sampleRecorder?.start() ?: false
+        if (started) {
+            serviceScope.launch {
+                delay(2000)
+                if (sampleRecorder?.isRecording == true) {
+                    recordCommandSample(commandId, sampleIndex)
+                }
+            }
+        } else {
+            Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
+            sampleRecorder = null
+            recordingCommandId = null
+        }
+    }
+
+    // --- TMUX tab ---
+
+    private fun setupTmuxTab(view: View) {
+        tmuxView = view.findViewById(R.id.tmuxView)
+        contentFrame = view.findViewById(R.id.contentFrame)
+
+        tmuxView?.listener = object : TmuxViewListener {
+            override fun onSendKeys(key: String) {
+                serviceScope.launch(Dispatchers.IO) {
+                    try {
+                        sshContextProvider?.sendKeys(key)
+                        delay(100)
+                        val text = sshContextProvider?.fetchLines(20)
+                        withContext(Dispatchers.Main) {
+                            tmuxView?.updateOutput(text)
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+
+            override fun onRequestRefresh(callback: (String?) -> Unit) {
+                serviceScope.launch(Dispatchers.IO) {
+                    val text = try { sshContextProvider?.fetchLines(20) } catch (_: Exception) { null }
+                    withContext(Dispatchers.Main) { callback(text) }
+                }
+            }
+        }
+    }
+
+    // --- Tab bar ---
+
+    private fun setupTabBar(view: View) {
         tabVoice = view.findViewById(R.id.tabVoice)
         tabCommand = view.findViewById(R.id.tabCommand)
         tabInput = view.findViewById(R.id.tabInput)
@@ -139,7 +300,7 @@ class VoiceInputIME : InputMethodService() {
 
         tabBarManager = TabBarManager { tab ->
             when (tab) {
-                TabBarManager.TAB_VOICE -> showVoiceModeContent()
+                TabBarManager.TAB_VOICE -> showInputContent()
                 TabBarManager.TAB_COMMAND -> showLearningModeContent()
                 TabBarManager.TAB_TMUX -> showTmuxContent()
             }
@@ -150,19 +311,10 @@ class VoiceInputIME : InputMethodService() {
         tabCommand?.setOnClickListener { animateTabSelection(TabBarManager.TAB_COMMAND) }
         tabInput?.setOnClickListener { animateTabSelection(TabBarManager.TAB_TMUX) }
 
-        // Apply initial tab style (VOICE selected)
         applyTabStyles()
-        // Force initial selected style on VOICE tab
         applySelectedStyle(tabVoice)
         applyUnselectedStyle(tabCommand)
         applyUnselectedStyle(tabInput)
-
-        // Setup mic double-tap gesture on voiceModeArea
-        setupVoiceAreaGesture()
-
-        refreshNtfyListener()
-
-        return view
     }
 
     private fun showInputContextDebug() {
@@ -171,67 +323,27 @@ class VoiceInputIME : InputMethodService() {
         val icDebug = InputContextReader.formatContextDebug(before)
 
         serviceScope.launch {
-            val sshText = withContext(Dispatchers.IO) {
-                sshContextProvider?.fetchContext()
-            }
+            val sshText = withContext(Dispatchers.IO) { sshContextProvider?.fetchContext() }
             val sshDebug = if (sshText != null) "SSH[${sshText.length}]: OK" else "SSH: N/A"
-            statusText?.text = "$icDebug | $sshDebug"
-        }
-    }
-
-    private fun setupVoiceAreaGesture() {
-        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent): Boolean {
-                if (!isToggleRecording) {
-                    isToggleRecording = true
-                    onMicPressed()
-                } else {
-                    isToggleRecording = false
-                    onMicReleased()
-                }
-                return true
-            }
-
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (e1 == null) return false
-                val dy = e2.y - e1.y
-                val dx = e2.x - e1.x
-                if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30) {
-                    animateTabSelection(TabBarManager.TAB_TMUX)
-                    return true
-                }
-                return false
-            }
-
-            override fun onDown(e: MotionEvent): Boolean = true
-        })
-
-        voiceModeArea?.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            true
+            Toast.makeText(this@VoiceInputIME, "$icDebug | $sshDebug", Toast.LENGTH_LONG).show()
         }
     }
 
     private fun animateTabSelection(tab: Int) {
         if (tab == tabBarManager.currentTab) return
-
         val targetView = getTabView(tab) ?: return
 
-        // Flash dark (20ms)
         targetView.alpha = 0.5f
         targetView.postDelayed({ targetView.alpha = 1.0f }, TabBarManager.FLASH_DURATION_MS)
 
-        // Haptic feedback
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             targetView.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         } else {
             targetView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
 
-        // Update state
         tabBarManager.selectTab(tab)
 
-        // Animate all tabs
         val tabs = listOf(tabVoice, tabCommand, tabInput)
         tabs.forEachIndexed { index, tv ->
             if (tv == null) return@forEachIndexed
@@ -292,23 +404,35 @@ class VoiceInputIME : InputMethodService() {
         else -> null
     }
 
-    private fun refreshProcessor() {
-        val prefsManager = PreferencesManager(
-            getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
-        )
-        val apiKey = prefsManager.getApiKey()
-        if (apiKey.isNullOrBlank()) {
-            processor = null
-        } else {
-            val whisperModel = prefsManager.getWhisperModel()
-            processor = VoiceInputProcessor(
-                AudioRecorder(cacheDir),
-                WhisperClient(apiKey, model = whisperModel),
-                GptConverter(apiKey)
-            )
-        }
-        refreshSshProvider()
+    // --- Tab content switching ---
+
+    private fun showInputContent() {
+        tmuxView?.stopPolling()
+        tmuxView?.visibility = View.GONE
+        commandLearning?.visibility = View.GONE
+        voiceModeArea?.visibility = View.VISIBLE
+        contentFrame?.setBackgroundColor(0)
     }
+
+    private fun showTmuxContent() {
+        voiceModeArea?.visibility = View.GONE
+        commandLearning?.visibility = View.GONE
+        tmuxView?.visibility = View.VISIBLE
+        contentFrame?.setBackgroundColor(0xFF111418.toInt())
+        tmuxView?.startPolling()
+        clearTmuxNotification()
+    }
+
+    private fun showLearningModeContent() {
+        tmuxView?.stopPolling()
+        voiceModeArea?.visibility = View.GONE
+        tmuxView?.visibility = View.GONE
+        commandLearning?.visibility = View.VISIBLE
+        commandLearning?.refreshCommandList()
+        contentFrame?.setBackgroundColor(0xFF111418.toInt())
+    }
+
+    // --- Notifications ---
 
     private fun refreshSshProvider() {
         val prefsManager = PreferencesManager(
@@ -336,9 +460,7 @@ class VoiceInputIME : InputMethodService() {
         if (topic.isNotBlank()) {
             ntfyListener = NtfyListener(topic, onNotification = { data ->
                 val color = parseNotificationColor(data)
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    showTmuxNotification(color)
-                }
+                mainHandler.post { showTmuxNotification(color) }
             })
             ntfyListener?.start()
         }
@@ -371,339 +493,7 @@ class VoiceInputIME : InputMethodService() {
         notificationDot?.visibility = View.GONE
     }
 
-    private fun onMicPressed() {
-        refreshProcessor()
-        val proc = processor ?: run {
-            Toast.makeText(this, "APIキーが設定されていません", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Check if text is selected in candidate area for replacement
-        val tv = candidateText
-        if (tv != null && currentFullText != null) {
-            val start = tv.selectionStart
-            val end = tv.selectionEnd
-            if (start >= 0 && end >= 0 && start != end) {
-                replacementRange = Pair(start, end)
-            } else {
-                replacementRange = null
-            }
-        } else {
-            replacementRange = null
-        }
-
-        val started = proc.startRecording()
-        if (started) {
-            if (replacementRange != null) {
-                statusText?.text = "録音中（選択範囲を置換）..."
-            } else {
-                statusText?.text = "録音中..."
-                hideCandidateArea()
-            }
-        } else {
-            replacementRange = null
-            Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun onMicReleased() {
-        val proc = processor ?: return
-        if (!proc.isRecording) return
-
-        val range = replacementRange
-        replacementRange = null
-
-        if (range != null) {
-            onMicReleasedForReplacement(proc, range)
-        } else {
-            onMicReleasedForNewInput(proc)
-        }
-    }
-
-    private fun onMicReleasedForNewInput(proc: VoiceInputProcessor) {
-        statusText?.text = "処理中..."
-
-        serviceScope.launch {
-            val audioFile = proc.stopRecording() ?: run {
-                statusText?.text = "録音に失敗しました"
-                return@launch
-            }
-
-            try {
-                // Skip silent audio to avoid Whisper hallucination
-                val wavBytes = audioFile.readBytes()
-                if (wavBytes.size > 44) {
-                    val pcm = wavBytes.copyOfRange(44, wavBytes.size)
-                    if (AudioProcessor.isSilent(pcm)) {
-                        audioFile.delete()
-                        statusText?.text = "音声が検出されませんでした"
-                        return@launch
-                    }
-                }
-
-                // Try command matching first
-                val matched = tryMatchCommand(audioFile)
-                if (matched) return@launch
-
-                // No command match — Whisper→GPT
-                statusText?.text = "変換中..."
-
-                // Fetch terminal context via SSH (if configured)
-                val tmuxContext = withContext(Dispatchers.IO) {
-                    sshContextProvider?.fetchContext()
-                }
-                val whisperPrompt = SshContextProvider.extractWhisperContext(tmuxContext)
-                val gptContext = SshContextProvider.extractGptContext(tmuxContext)
-
-                val corrections = correctionRepo?.getTopCorrections(20)
-                val chunks = proc.processAudioFile(
-                    audioFile,
-                    context = whisperPrompt,
-                    terminalContext = gptContext,
-                    corrections = corrections
-                )
-                if (chunks != null) {
-                    val fullText = chunks.joinToString("") { it.displayText }
-                    committedTextLength = fullText.length
-                    currentFullText = fullText
-                    currentInputConnection?.commitText(fullText, 1)
-                    showCandidateArea(fullText)
-                    statusText?.text = "完了（テキスト選択→候補）"
-                } else {
-                    statusText?.text = "変換に失敗しました"
-                }
-                delay(5000)
-                statusText?.text = "ダブルタップで音声入力"
-            } catch (e: Exception) {
-                audioFile.delete()
-                statusText?.text = "エラーが発生しました"
-                delay(5000)
-                statusText?.text = "ダブルタップで音声入力"
-            }
-        }
-    }
-
-    private fun onMicReleasedForReplacement(proc: VoiceInputProcessor, range: Pair<Int, Int>) {
-        statusText?.text = "音声認識中..."
-
-        serviceScope.launch {
-            val rawText = proc.stopAndTranscribeOnly()
-            if (rawText != null) {
-                replaceRange(range.first, range.second, rawText)
-                statusText?.text = "置換完了（テキスト選択→候補）"
-            } else {
-                statusText?.text = "音声認識に失敗しました"
-            }
-            delay(5000)
-            statusText?.text = "ダブルタップで音声入力"
-        }
-    }
-
-    private suspend fun tryMatchCommand(audioFile: java.io.File): Boolean {
-        val commands = commandRepo?.getCommands()
-            ?.filter { it.enabled && it.sampleCount > 0 }
-            ?.map { it.copy(threshold = 15.0f) }
-        if (commands.isNullOrEmpty()) return false
-
-        val mfccSamples = withContext(Dispatchers.IO) {
-            commandRepo?.loadAllMfccs() ?: emptyMap()
-        }
-        if (mfccSamples.isEmpty()) return false
-
-        val inputMfcc = withContext(Dispatchers.IO) {
-            MfccExtractor.extract(audioFile.readBytes())
-        }
-
-        // Calculate distances for all commands (for diagnostics)
-        val distances = commands.mapNotNull { cmd ->
-            val samples = mfccSamples[cmd.id] ?: return@mapNotNull null
-            if (samples.isEmpty()) return@mapNotNull null
-            val dist = samples.minOf { DtwMatcher.dtwDistance(inputMfcc, it) }
-            Triple(cmd, dist, cmd.threshold)
-        }.sortedBy { it.second }
-
-        if (distances.isEmpty()) return false
-
-        val best = distances.first()
-        val matched = best.second < best.third
-
-        // Show all distances for tuning
-        val allDist = distances.joinToString(" ") { "%.0f:%s".format(it.second, it.first.label) }
-        if (matched) {
-            audioFile.delete()
-            val ic = currentInputConnection ?: return false
-            CommandExecutor.execute(best.first.text, ic)
-            statusText?.text = "✓${best.first.label} $allDist"
-            delay(5000)
-            statusText?.text = "ダブルタップで音声入力"
-            return true
-        } else {
-            statusText?.text = "✗ $allDist"
-            return false
-        }
-    }
-
-    // --- Candidate area ---
-
-    private fun showCandidateArea(text: String) {
-        candidateText?.text = text
-        candidateArea?.visibility = View.VISIBLE
-    }
-
-    private fun hideCandidateArea() {
-        candidateArea?.visibility = View.GONE
-        candidateText?.text = ""
-        currentFullText = null
-    }
-
-    private fun onCandidateButtonTap() {
-        val tv = candidateText ?: return
-        val start = tv.selectionStart
-        val end = tv.selectionEnd
-
-        if (start < 0 || end < 0 || start == end) {
-            Toast.makeText(this, "テキストを選択してください", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val selectedText = tv.text.substring(start, end)
-        fetchAiCandidates(selectedText, start, end)
-    }
-
-    private fun fetchAiCandidates(selectedText: String, selStart: Int, selEnd: Int) {
-        statusText?.text = "候補取得中..."
-
-        serviceScope.launch {
-            val prefsManager = PreferencesManager(
-                getSharedPreferences("voice_input_prefs", MODE_PRIVATE)
-            )
-            val apiKey = prefsManager.getApiKey() ?: return@launch
-            val converter = GptConverter(apiKey)
-            val candidates = withContext(Dispatchers.IO) {
-                converter.getCandidates(selectedText)
-            }
-
-            if (candidates.isNotEmpty()) {
-                showAiCandidatePopup(candidates, selStart, selEnd)
-            } else {
-                Toast.makeText(this@VoiceInputIME, "候補を取得できませんでした", Toast.LENGTH_SHORT).show()
-            }
-            statusText?.text = "ダブルタップで音声入力"
-        }
-    }
-
-    private fun showAiCandidatePopup(candidates: List<String>, selStart: Int, selEnd: Int) {
-        val anchor = candidateButton ?: return
-        val popup = PopupMenu(this, anchor)
-
-        candidates.forEachIndexed { i, candidate ->
-            popup.menu.add(0, i, i, candidate)
-        }
-
-        popup.setOnMenuItemClickListener { item ->
-            val selected = candidates[item.itemId]
-            replaceRange(selStart, selEnd, selected)
-            true
-        }
-        popup.show()
-    }
-
-    private fun replaceRange(selStart: Int, selEnd: Int, replacement: String) {
-        val ic = currentInputConnection ?: return
-        val fullText = currentFullText ?: return
-
-        // Delete all committed text
-        for (i in 0 until committedTextLength) {
-            ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
-            ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
-        }
-
-        // Build new text
-        val newText = fullText.substring(0, selStart) + replacement + fullText.substring(selEnd)
-        ic.commitText(newText, 1)
-        committedTextLength = newText.length
-        currentFullText = newText
-        showCandidateArea(newText)
-
-        // Auto-learn the correction
-        val originalFragment = fullText.substring(selStart, selEnd)
-        if (originalFragment != replacement) {
-            serviceScope.launch(Dispatchers.IO) {
-                correctionRepo?.save(originalFragment, replacement)
-            }
-        }
-    }
-
-    private fun showTmuxContent() {
-        voiceModeArea?.visibility = View.GONE
-        commandLearning?.visibility = View.GONE
-        tmuxView?.visibility = View.VISIBLE
-        contentFrame?.setBackgroundColor(0xFF111418.toInt())
-        tmuxView?.startPolling()
-        clearTmuxNotification()
-    }
-
-    private fun showVoiceModeContent() {
-        tmuxView?.stopPolling()
-        tmuxView?.visibility = View.GONE
-        commandLearning?.visibility = View.GONE
-        voiceModeArea?.visibility = View.VISIBLE
-        contentFrame?.setBackgroundColor(0)
-    }
-
-    private fun showLearningModeContent() {
-        tmuxView?.stopPolling()
-        voiceModeArea?.visibility = View.GONE
-        tmuxView?.visibility = View.GONE
-        commandLearning?.visibility = View.VISIBLE
-        commandLearning?.refreshCommandList()
-        contentFrame?.setBackgroundColor(0xFF111418.toInt())
-    }
-
-    private fun showVoiceMode() {
-        animateTabSelection(TabBarManager.TAB_VOICE)
-    }
-
-    private fun recordCommandSample(commandId: String, sampleIndex: Int) {
-        if (sampleIndex >= 5) return // max 5 samples
-
-        if (sampleRecorder?.isRecording == true) {
-            // Stop recording
-            val wavFile = sampleRecorder?.stop() ?: return
-            val targetFile = commandRepo?.getSampleFile(commandId, sampleIndex)
-            if (targetFile != null) {
-                wavFile.copyTo(targetFile, overwrite = true)
-                try {
-                    val mfcc = MfccExtractor.extract(targetFile.readBytes())
-                    commandRepo?.saveMfccCache(commandId, sampleIndex, mfcc)
-                } catch (_: Exception) {}
-                wavFile.delete()
-                commandRepo?.updateSampleCount(commandId, sampleIndex + 1)
-                commandLearning?.refreshCommandList()
-            }
-            sampleRecorder = null
-            recordingCommandId = null
-            return
-        }
-
-        // Start recording (auto-stop after 2 seconds)
-        sampleRecorder = AudioRecorder(cacheDir)
-        recordingCommandId = commandId
-        recordingSampleIndex = sampleIndex
-        val started = sampleRecorder?.start() ?: false
-        if (started) {
-            serviceScope.launch {
-                delay(2000)
-                if (sampleRecorder?.isRecording == true) {
-                    recordCommandSample(commandId, sampleIndex)
-                }
-            }
-        } else {
-            Toast.makeText(this, "録音を開始できません", Toast.LENGTH_SHORT).show()
-            sampleRecorder = null
-            recordingCommandId = null
-        }
-    }
+    // --- Lifecycle ---
 
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
@@ -711,6 +501,8 @@ class VoiceInputIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (::inputController.isInitialized) inputController.cleanup()
+        currentInputConnection?.finishComposingText()
         ntfyListener?.stop()
         tmuxView?.stopPolling()
         sshContextProvider?.disconnect()

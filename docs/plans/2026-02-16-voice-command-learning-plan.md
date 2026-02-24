@@ -51,7 +51,7 @@ class VoiceCommandTest {
 
 **Step 2: テスト実行 → 失敗確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceCommandTest" 2>&1 | tail -10`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceCommandTest" 2>&1 | tail -10`
 
 **Step 3: 実装**
 
@@ -177,7 +177,7 @@ class VoiceCommandRepositoryTest {
 
 **Step 2: テスト実行 → 失敗確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceCommandRepositoryTest" 2>&1 | tail -10`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceCommandRepositoryTest" 2>&1 | tail -10`
 
 **Step 3: 実装**
 
@@ -327,7 +327,7 @@ PAGE_BRAIN -> R.layout.icon_page_brain
 
 **Step 4: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -10`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -10`
 
 **Step 5: コミット**
 
@@ -407,11 +407,11 @@ private fun showLearningModeContent() {
 
 **Step 3: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -10`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -10`
 
 **Step 4: APKビルド確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 
 **Step 5: コミット**
 
@@ -783,7 +783,7 @@ class CommandLearningView @JvmOverloads constructor(
 
 **Step 3: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -10`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -10`
 
 **Step 4: コミット**
 
@@ -891,11 +891,11 @@ private fun showLearningModeContent() {
 
 **Step 3: テスト実行 → 全テストパス確認**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -10`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -10`
 
 **Step 4: APKビルド + 同期**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 **Step 5: コミット**
@@ -911,10 +911,10 @@ git commit -m "feat: integrate CommandLearningView into IME with sample recordin
 
 **Step 1: 全テスト実行**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: ALL PASS
 
 **Step 2: APKビルド + 同期**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
