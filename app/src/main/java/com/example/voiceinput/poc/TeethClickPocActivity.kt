@@ -101,10 +101,18 @@ class TeethClickPocActivity : AppCompatActivity() {
     }
 
     private fun startBluetoothSco() {
-        registerReceiver(
-            scoReceiver,
-            IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                scoReceiver,
+                IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED),
+                Context.RECEIVER_EXPORTED
+            )
+        } else {
+            registerReceiver(
+                scoReceiver,
+                IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+            )
+        }
         scoStatus.text = "Bluetooth SCO: connecting..."
         audioManager.startBluetoothSco()
     }
