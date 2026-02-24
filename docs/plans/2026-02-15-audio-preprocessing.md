@@ -69,7 +69,7 @@ class AudioProcessorTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: FAIL — `AudioProcessor` not found
 
 **Step 3: Write minimal implementation**
@@ -121,7 +121,7 @@ object AudioProcessor {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
@@ -198,7 +198,7 @@ private fun calculateRms(pcmData: ByteArray): Double {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: FAIL — `normalizeRms` not found
 
 **Step 3: Write minimal implementation**
@@ -237,7 +237,7 @@ fun normalizeRms(pcmData: ByteArray, targetRmsDb: Double = -18.0): ByteArray {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
@@ -298,7 +298,7 @@ private fun rmsOfRange(samples: ShortArray, from: Int, to: Int): Double {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: FAIL — `compress` not found
 
 **Step 3: Write minimal implementation**
@@ -356,7 +356,7 @@ fun compress(
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
@@ -409,7 +409,7 @@ fun `processForWhisper applies normalization and compression then outputs WAV`()
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: FAIL — `processForWhisper` not found
 
 **Step 3: Write minimal implementation**
@@ -426,7 +426,7 @@ fun processForWhisper(pcmData: ByteArray, sampleRate: Int, outputFile: File) {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioProcessorTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
@@ -494,7 +494,7 @@ class AudioRecorderTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" 2>&1 | tail -20`
 Expected: FAIL — `.wav` assertion fails (currently `.m4a`)
 
 **Step 3: Rewrite AudioRecorder**
@@ -619,12 +619,12 @@ class AudioRecorder(private val outputDir: File) {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Run ALL tests to verify nothing broke**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: ALL PASS（VoiceInputProcessorTest は AudioRecorder を mockk しているので影響なし）
 
 **Step 6: Commit**
@@ -691,7 +691,7 @@ fun `transcribe sends prompt when provided`() {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.WhisperClientTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.WhisperClientTest" 2>&1 | tail -20`
 Expected: FAIL — temperature not in request body / prompt parameter not found
 
 **Step 3: Update WhisperClient**
@@ -735,12 +735,12 @@ fun transcribe(audioFile: File, prompt: String? = null): String? {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.WhisperClientTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.WhisperClientTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Run ALL tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: ALL PASS
 
 **Step 6: Commit**
@@ -796,7 +796,7 @@ fun `stopAndTranscribeOnly passes context to whisper`() = runTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" 2>&1 | tail -20`
 Expected: FAIL — context parameter not found
 
 **Step 3: Update VoiceInputProcessor**
@@ -836,7 +836,7 @@ suspend fun stopAndProcess(context: String? = null): List<ConversionChunk>? {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Update VoiceInputIME to pass context**
@@ -876,7 +876,7 @@ private fun getEditorContext(): String? {
 
 **Step 6: Run ALL tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: ALL PASS
 
 **Step 7: Commit**
@@ -897,17 +897,17 @@ git commit -m "feat: pass editor context as Whisper prompt for better recognitio
 
 **Step 1: Run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: ALL PASS
 
 **Step 2: Build APK**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Copy APK to sync directory**
 
-Run: `cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
+Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 **Step 4: Commit**
 

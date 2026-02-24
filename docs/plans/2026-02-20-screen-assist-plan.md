@@ -76,7 +76,7 @@ class BoundingRectCalculatorTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.BoundingRectCalculatorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.BoundingRectCalculatorTest" 2>&1 | tail -20`
 Expected: FAIL — class not found
 
 **Step 3: Write minimal implementation**
@@ -126,13 +126,13 @@ object BoundingRectCalculator {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.BoundingRectCalculatorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.BoundingRectCalculatorTest" 2>&1 | tail -20`
 Expected: PASS (4 tests)
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/BoundingRectCalculator.kt app/src/test/java/com/example/voiceinput/BoundingRectCalculatorTest.kt
 git commit -m "feat: add BoundingRectCalculator for touch region selection"
 ```
@@ -253,7 +253,7 @@ class VisionClientTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VisionClientTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VisionClientTest" 2>&1 | tail -20`
 Expected: FAIL — class not found
 
 **Step 3: Write minimal implementation**
@@ -331,13 +331,13 @@ class VisionClient(
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VisionClientTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VisionClientTest" 2>&1 | tail -20`
 Expected: PASS (4 tests)
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/VisionClient.kt app/src/test/java/com/example/voiceinput/VisionClientTest.kt
 git commit -m "feat: add VisionClient for GPT-4o Vision API"
 ```
@@ -442,7 +442,7 @@ class SilenceDetectorTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.SilenceDetectorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.SilenceDetectorTest" 2>&1 | tail -20`
 Expected: FAIL — class not found
 
 **Step 3: Write minimal implementation**
@@ -497,13 +497,13 @@ class SilenceDetector(
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.SilenceDetectorTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.SilenceDetectorTest" 2>&1 | tail -20`
 Expected: PASS (5 tests)
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/SilenceDetector.kt app/src/test/java/com/example/voiceinput/SilenceDetectorTest.kt
 git commit -m "feat: add SilenceDetector for auto-stop recording"
 ```
@@ -575,7 +575,7 @@ class ScreenCropperTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.ScreenCropperTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.ScreenCropperTest" 2>&1 | tail -20`
 Expected: FAIL — class not found
 
 **Step 3: Write minimal implementation**
@@ -617,7 +617,7 @@ object ScreenCropper {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.ScreenCropperTest" 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.ScreenCropperTest" 2>&1 | tail -20`
 Expected: PASS (4 tests)
 
 Note: `android.graphics.Rect` is available in unit tests because `minSdk=30` and the Android SDK stubs are on the classpath. If `Rect` causes issues, the test runner may need `testOptions.unitTests.isReturnDefaultValues = true` in `build.gradle.kts`. Check and add if needed:
@@ -633,7 +633,7 @@ android {
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/ScreenCropper.kt app/src/test/java/com/example/voiceinput/ScreenCropperTest.kt
 git commit -m "feat: add ScreenCropper for bitmap crop and Base64 encode"
 ```
@@ -723,7 +723,7 @@ Add permissions (before `<application>`):
 
 **Step 5: Verify build compiles**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 Note: `AssistSession` doesn't exist yet — create a minimal placeholder in Step 6 of this task or create it in Task 6. If needed for compile, add a placeholder:
@@ -741,7 +741,7 @@ class AssistSession(context: Context) : VoiceInteractionSession(context)
 **Step 6: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/AssistInteractionService.kt \
     app/src/main/java/com/example/voiceinput/AssistSessionService.kt \
     app/src/main/java/com/example/voiceinput/AssistSession.kt \
@@ -851,13 +851,13 @@ class TouchCanvas(context: Context) : View(context) {
 
 **Step 2: Verify build compiles**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/TouchCanvas.kt
 git commit -m "feat: add TouchCanvas for finger region tracing"
 ```
@@ -1173,13 +1173,13 @@ class AssistSession(context: Context) : VoiceInteractionSession(context) {
 
 **Step 4: Verify build compiles**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add app/src/main/java/com/example/voiceinput/AssistSession.kt \
     app/src/main/res/layout/assist_overlay.xml \
     app/src/main/res/drawable/rounded_bg.xml
@@ -1206,7 +1206,7 @@ Verify no existing tests were broken.
 
 **Step 1: Run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -30`
 Expected: All tests PASS (existing 22 test files + 4 new test files)
 
 **Step 2: Fix any failures**
@@ -1224,7 +1224,7 @@ android {
 **Step 3: Commit if any fixes needed**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add -A
 git commit -m "fix: ensure all tests pass with new assist feature"
 ```
@@ -1262,7 +1262,7 @@ On the LG V60 device, verify:
 **Step 4: Commit final state**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app
+
 git add -A
 git commit -m "feat: complete Screen Assist feature with edge case handling"
 ```

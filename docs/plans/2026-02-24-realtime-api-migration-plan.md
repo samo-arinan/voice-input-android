@@ -141,7 +141,7 @@ class RealtimeEventTest {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeEventTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeEventTest" 2>&1 | tail -5`
 Expected: FAIL (class not found)
 
 **Step 3: Implement RealtimeEvent**
@@ -249,7 +249,7 @@ object RealtimeEvent {
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeEventTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeEventTest" 2>&1 | tail -5`
 Expected: PASS (all 11 tests)
 
 **Step 5: Commit**
@@ -461,7 +461,7 @@ class RealtimeClientTest {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeClientTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeClientTest" 2>&1 | tail -5`
 Expected: FAIL (class not found)
 
 **Step 3: Implement RealtimeClient**
@@ -569,7 +569,7 @@ class RealtimeClient(
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeClientTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeClientTest" 2>&1 | tail -5`
 Expected: PASS (all 13 tests)
 
 Note: `android.util.Base64` is not available in unit tests. Use a test helper or Robolectric shadow. If this fails, replace with `java.util.Base64.getEncoder().encodeToString()` in a wrapper and use the Android version in production. Alternatively, add a `base64Encoder` parameter to RealtimeClient for testability:
@@ -665,7 +665,7 @@ class RealtimePromptBuilderTest {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimePromptBuilderTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimePromptBuilderTest" 2>&1 | tail -5`
 Expected: FAIL
 
 **Step 3: Implement RealtimePromptBuilder**
@@ -718,7 +718,7 @@ object RealtimePromptBuilder {
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimePromptBuilderTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimePromptBuilderTest" 2>&1 | tail -5`
 Expected: PASS (all 6 tests)
 
 **Step 5: Commit**
@@ -785,7 +785,7 @@ class RealtimeAudioStreamerTest {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeAudioStreamerTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeAudioStreamerTest" 2>&1 | tail -5`
 Expected: FAIL
 
 **Step 3: Implement RealtimeAudioStreamer**
@@ -899,7 +899,7 @@ class RealtimeAudioStreamer(
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeAudioStreamerTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RealtimeAudioStreamerTest" 2>&1 | tail -5`
 Expected: PASS (all 5 tests)
 
 **Step 5: Commit**
@@ -981,7 +981,7 @@ class UndoManagerTest {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.UndoManagerTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.UndoManagerTest" 2>&1 | tail -5`
 Expected: FAIL
 
 **Step 3: Implement UndoManager**
@@ -1020,7 +1020,7 @@ class UndoManager {
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.UndoManagerTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.UndoManagerTest" 2>&1 | tail -5`
 Expected: PASS (all 6 tests)
 
 **Step 5: Commit**
@@ -1087,7 +1087,7 @@ enum class RippleState {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RippleAnimationViewTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RippleAnimationViewTest" 2>&1 | tail -5`
 Expected: FAIL
 
 **Step 3: Implement RippleAnimationView**
@@ -1230,7 +1230,7 @@ Note: `RippleState` enum goes in the same file or keep the one from the test. Re
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.RippleAnimationViewTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.RippleAnimationViewTest" 2>&1 | tail -5`
 Expected: PASS (all 3 tests)
 
 **Step 5: Commit**
@@ -1315,7 +1315,7 @@ Keep tab bar at top as-is.
 
 **Step 3: Verify build succeeds**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Expected: BUILD SUCCESSFUL
 
 **Step 4: Commit**
@@ -1576,7 +1576,7 @@ private fun cleanup() {
 
 **Step 9: Verify build succeeds**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Expected: BUILD SUCCESSFUL
 
 **Step 10: Commit**
@@ -1611,7 +1611,7 @@ fun realtime_model_save_and_get() {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.PreferencesManagerTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.PreferencesManagerTest" 2>&1 | tail -5`
 Expected: FAIL (method not found)
 
 **Step 3: Add to PreferencesManager**
@@ -1634,7 +1634,7 @@ fun getRealtimeModel(): String {
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.PreferencesManagerTest" 2>&1 | tail -5`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.PreferencesManagerTest" 2>&1 | tail -5`
 Expected: PASS
 
 **Step 5: Commit**
@@ -1692,7 +1692,7 @@ Move the RealtimeClient creation and connection logic into `connectRealtime(apiK
 
 **Step 3: Verify build**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Expected: BUILD SUCCESSFUL
 
 **Step 4: Commit**
@@ -1788,12 +1788,12 @@ AudioProcessor.encodeWav(pcmData, SAMPLE_RATE, outputFile)
 
 **Step 7: Run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: All remaining tests PASS
 
 **Step 8: Verify build**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Expected: BUILD SUCCESSFUL
 
 **Step 9: Commit**
@@ -1809,17 +1809,17 @@ git commit -m "refactor: remove old Whisper+GPT pipeline, keep only Realtime API
 
 **Step 1: Run full test suite**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest 2>&1 | tail -20`
 Expected: All tests PASS
 
 **Step 2: Build APK**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -5`
+Run: `./gradlew assembleDebug 2>&1 | tail -5`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Copy APK for testing**
 
-Run: `cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
+Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 **Step 4: Manual testing checklist (for user)**
 

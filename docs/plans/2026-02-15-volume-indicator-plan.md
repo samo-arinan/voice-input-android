@@ -30,7 +30,7 @@ fun `getAmplitude returns 0 when not recording`() {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" --info 2>&1 | tail -20`
 Expected: FAIL — `getAmplitude` not defined
 
 **Step 3: Write minimal implementation**
@@ -50,13 +50,13 @@ fun getAmplitude(): Int {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.AudioRecorderTest" --info 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app && git add app/src/main/java/com/example/voiceinput/AudioRecorder.kt app/src/test/java/com/example/voiceinput/AudioRecorderTest.kt && git commit -m "feat: add getAmplitude() to AudioRecorder"
+git add app/src/main/java/com/example/voiceinput/AudioRecorder.kt app/src/test/java/com/example/voiceinput/AudioRecorderTest.kt && git commit -m "feat: add getAmplitude() to AudioRecorder"
 ```
 
 ---
@@ -82,7 +82,7 @@ fun `getAmplitude delegates to audioRecorder`() {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" --info 2>&1 | tail -20`
 Expected: FAIL — `getAmplitude` not defined on VoiceInputProcessor
 
 **Step 3: Write minimal implementation**
@@ -97,13 +97,13 @@ fun getAmplitude(): Int {
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.VoiceInputProcessorTest" --info 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app && git add app/src/main/java/com/example/voiceinput/VoiceInputProcessor.kt app/src/test/java/com/example/voiceinput/VoiceInputProcessorTest.kt && git commit -m "feat: add getAmplitude() to VoiceInputProcessor"
+git add app/src/main/java/com/example/voiceinput/VoiceInputProcessor.kt app/src/test/java/com/example/voiceinput/VoiceInputProcessorTest.kt && git commit -m "feat: add getAmplitude() to VoiceInputProcessor"
 ```
 
 ---
@@ -180,7 +180,7 @@ class MicButtonRingViewTest {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.MicButtonRingViewTest" --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.MicButtonRingViewTest" --info 2>&1 | tail -20`
 Expected: FAIL — class not found
 
 **Step 3: Write minimal implementation**
@@ -276,13 +276,13 @@ class MicButtonRingView @JvmOverloads constructor(
 
 **Step 4: Run test to verify it passes**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.MicButtonRingViewTest" --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.MicButtonRingViewTest" --info 2>&1 | tail -20`
 Expected: PASS
 
 **Step 5: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app && git add app/src/main/java/com/example/voiceinput/MicButtonRingView.kt app/src/test/java/com/example/voiceinput/MicButtonRingViewTest.kt && git commit -m "feat: add MicButtonRingView with color interpolation"
+git add app/src/main/java/com/example/voiceinput/MicButtonRingView.kt app/src/test/java/com/example/voiceinput/MicButtonRingViewTest.kt && git commit -m "feat: add MicButtonRingView with color interpolation"
 ```
 
 ---
@@ -318,13 +318,13 @@ Replace the `ImageView` block at the bottom of `ime_voice_input.xml`:
 
 **Step 2: Build to verify layout compiles**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app && git add app/src/main/res/layout/ime_voice_input.xml && git commit -m "feat: wrap mic button with MicButtonRingView in layout"
+git add app/src/main/res/layout/ime_voice_input.xml && git commit -m "feat: wrap mic button with MicButtonRingView in layout"
 ```
 
 ---
@@ -386,16 +386,16 @@ stopAmplitudePolling()
 
 **Step 2: Build and run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --info 2>&1 | tail -20`
+Run: `./gradlew testDebugUnitTest --info 2>&1 | tail -20`
 Expected: All tests PASS
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Commit**
 
 ```bash
-cd /Users/j/Area/tdd/voice-input-android-app && git add app/src/main/java/com/example/voiceinput/VoiceInputIME.kt && git commit -m "feat: add amplitude polling to VoiceInputIME"
+git add app/src/main/java/com/example/voiceinput/VoiceInputIME.kt && git commit -m "feat: add amplitude polling to VoiceInputIME"
 ```
 
 ---
@@ -404,18 +404,18 @@ cd /Users/j/Area/tdd/voice-input-android-app && git add app/src/main/java/com/ex
 
 **Step 1: Run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --info 2>&1 | tail -30`
+Run: `./gradlew testDebugUnitTest --info 2>&1 | tail -30`
 Expected: All tests PASS
 
 **Step 2: Build APK**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug 2>&1 | tail -10`
+Run: `./gradlew assembleDebug 2>&1 | tail -10`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Copy APK to sync directory**
 
-Run: `cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
+Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 **Step 4: Commit (if any remaining changes)**
 
-Verify clean state: `cd /Users/j/Area/tdd/voice-input-android-app && git status`
+Verify clean state: `git status`

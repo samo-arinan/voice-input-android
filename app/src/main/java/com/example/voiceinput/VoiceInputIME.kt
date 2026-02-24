@@ -501,7 +501,7 @@ class VoiceInputIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        inputController.cleanup()
+        if (::inputController.isInitialized) inputController.cleanup()
         currentInputConnection?.finishComposingText()
         ntfyListener?.stop()
         tmuxView?.stopPolling()

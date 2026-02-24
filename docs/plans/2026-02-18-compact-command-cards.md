@@ -55,7 +55,7 @@ This gives a bounded height for the command tab. ScrollView inside with `weight=
 
 **Step 3: Run existing tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest`
+Run: `./gradlew testDebugUnitTest`
 Expected: All tests PASS (layout-only change doesn't affect unit tests)
 
 **Step 4: Commit**
@@ -110,7 +110,7 @@ class CommandCardStateTest {
 
 **Step 2: Run tests to verify they fail**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.CommandCardStateTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.CommandCardStateTest"`
 Expected: FAIL — `shouldShowPlayButton` and `latestSampleIndex` don't exist yet
 
 **Step 3: Add companion object helpers to CommandLearningView**
@@ -129,7 +129,7 @@ In `app/src/main/java/com/example/voiceinput/CommandLearningView.kt`, add to the
 
 **Step 4: Run tests to verify they pass**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest --tests "com.example.voiceinput.CommandCardStateTest"`
+Run: `./gradlew testDebugUnitTest --tests "com.example.voiceinput.CommandCardStateTest"`
 Expected: All 4 tests PASS
 
 **Step 5: Commit**
@@ -367,7 +367,7 @@ The `animateDotFill` method (line 295-310) references the old child indices. Upd
 
 **Step 5: Run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest`
+Run: `./gradlew testDebugUnitTest`
 Expected: All tests PASS
 
 **Step 6: Commit**
@@ -484,7 +484,7 @@ Override `onDetachedFromWindow`:
 
 **Step 5: Run all tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest`
+Run: `./gradlew testDebugUnitTest`
 Expected: All tests PASS
 
 **Step 6: Commit**
@@ -500,17 +500,17 @@ git commit -m "feat: add MediaPlayer playback for trained command samples"
 
 **Step 1: Run all unit tests**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew testDebugUnitTest`
+Run: `./gradlew testDebugUnitTest`
 Expected: All tests PASS
 
 **Step 2: Build debug APK**
 
-Run: `cd /Users/j/Area/tdd/voice-input-android-app && ./gradlew assembleDebug`
+Run: `./gradlew assembleDebug`
 Expected: BUILD SUCCESSFUL
 
 **Step 3: Copy APK to sync folder**
 
-Run: `cp /Users/j/Area/tdd/voice-input-android-app/app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
+Run: `cp app/build/outputs/apk/debug/app-debug.apk ~/Sync/APK/voice-input.apk`
 
 **Step 4: Final commit if any remaining changes**
 
