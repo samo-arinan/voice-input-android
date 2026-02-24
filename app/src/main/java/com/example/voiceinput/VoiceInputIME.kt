@@ -8,7 +8,6 @@ import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
-import android.util.Log
 import java.io.File
 import kotlinx.coroutines.*
 import org.json.JSONObject
@@ -85,7 +84,6 @@ class VoiceInputIME : InputMethodService() {
         )
         inputController.callback = object : RealtimeInputController.Callback {
             override fun onStateChanged(state: RealtimeInputController.State) {
-                Log.d("VoiceIME", "state → $state")
                 when (state) {
                     RealtimeInputController.State.IDLE -> {
                         rippleView?.setState(RippleState.IDLE)
@@ -106,15 +104,11 @@ class VoiceInputIME : InputMethodService() {
             }
 
             override fun onComposingText(text: String) {
-                val ic = currentInputConnection
-                Log.d("VoiceIME", "onComposingText: ic=${ic != null} text=\"${text.take(50)}\"")
-                ic?.setComposingText(text, 1)
+                currentInputConnection?.setComposingText(text, 1)
             }
 
             override fun onCommitText(text: String) {
-                val ic = currentInputConnection
-                Log.d("VoiceIME", "onCommitText: ic=${ic != null} text=\"${text.take(50)}\"")
-                ic?.commitText(text, 1)
+                currentInputConnection?.commitText(text, 1)
                 undoManager.recordCommit(text, text.length)
                 showUndoStrip(text)
             }
@@ -159,13 +153,11 @@ class VoiceInputIME : InputMethodService() {
                 try { sshContextProvider?.fetchContext() } catch (_: Exception) { null }
             }
             val gptContext = SshContextProvider.extractGptContext(tmuxContext)
-            Log.d("VoiceIME", "tmuxContext: ${if (gptContext.isNullOrBlank()) "NONE" else "${gptContext.length} chars"}")
             val corrections = correctionRepo?.getTopCorrections(20)
             val instructions = RealtimePromptBuilder.build(
                 corrections = corrections,
                 terminalContext = gptContext
             )
-            Log.d("VoiceIME", "instructions total: ${instructions.length} chars")
             inputController.start(apiKey, prefs.getRealtimeModel(), instructions)
         }
     }
