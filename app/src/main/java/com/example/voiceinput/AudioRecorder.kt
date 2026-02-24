@@ -97,7 +97,7 @@ class AudioRecorder(private val outputDir: File) {
         if (pcmData.isEmpty()) return null
 
         val outputFile = getOutputFile()
-        AudioProcessor.processForWhisper(pcmData, SAMPLE_RATE, outputFile)
+        AudioProcessor.encodeWav(pcmData, SAMPLE_RATE, outputFile)
         return outputFile
     }
 
